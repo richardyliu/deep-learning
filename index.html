@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep Learning — a first-principles history</title>
+<script>(function(){try{var l=localStorage.getItem('deeplearning-lang');document.documentElement.setAttribute('data-lang',l==='zh'?'zh':'en');}catch(e){document.documentElement.setAttribute('data-lang','en');}})();</script>
+<style>
+:root{
+  --fg:#1f2328; --muted:#59636e; --bg:#ffffff; --canvas-subtle:#f6f8fa;
+  --border:#d1d9e0; --border-muted:#d8dee4; --link:#0969da; --code-bg:rgba(129,139,152,.12);
+  --note:#0969da; --tip:#1a7f37; --important:#8250df; --warning:#9a6700; --caution:#cf222e;
+  --note-bg:#ddf4ff55; --tip-bg:#dafbe155; --important-bg:#fbefff55; --warning-bg:#fff8c555; --caution-bg:#ffebe955;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --fg:#e6edf3; --muted:#9198a1; --bg:#0d1117; --canvas-subtle:#151b23;
+    --border:#3d444d; --border-muted:#3d444d; --link:#4493f8; --code-bg:#656c7633;
+    --note:#4493f8; --tip:#3fb950; --important:#ab7df8; --warning:#d29922; --caution:#f85149;
+    --note-bg:#0d2c5a33; --tip-bg:#0f351f33; --important-bg:#2b173f33; --warning-bg:#3a2d0033; --caution-bg:#3c111133;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif;
+  font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1012px;margin:0 auto;padding:24px 32px 120px;}
+@media (max-width:767px){.wrap{padding:16px}}
+a{color:var(--link);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ---------- Papers menu ---------- */
+#papers{border:1px solid var(--border);border-radius:12px;background:var(--canvas-subtle);margin:0 0 20px;overflow:hidden}
+#papers>summary{cursor:pointer;list-style:none;padding:14px 18px;display:flex;flex-direction:column;gap:2px;
+  background:linear-gradient(180deg,var(--canvas-subtle),transparent);user-select:none}
+#papers>summary::-webkit-details-marker{display:none}
+#papers>summary::before{content:"▸";color:var(--muted);font-size:.9em;margin-right:8px}
+#papers[open]>summary::before{content:"▾"}
+.papers-title{font-weight:700;font-size:1.05em}
+.papers-sub{color:var(--muted);font-size:.85em;margin-left:20px}
+.papers-body{padding:6px 16px 14px;column-gap:28px}
+.sec{border-top:1px solid var(--border-muted);padding:6px 0}
+.sec>summary{cursor:pointer;font-weight:600;padding:6px 4px;list-style:none;color:var(--fg)}
+.sec>summary::-webkit-details-marker{display:none}
+.sec>summary::before{content:"+";display:inline-block;width:16px;color:var(--muted);font-weight:700}
+.sec[open]>summary::before{content:"–"}
+.sec .cnt{color:var(--muted);font-weight:400;font-size:.82em;margin-left:6px}
+.sec ul{list-style:none;margin:2px 0 8px;padding:0 0 0 22px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 18px}
+.sec li a.paper{display:block;padding:4px 8px;border-radius:6px;font-size:.92em;color:var(--link)}
+.sec li a.paper:hover{background:var(--code-bg);text-decoration:none}
+.sec li a.paper::before{content:"📄 ";filter:grayscale(.2)}
+
+/* ---------- Inline PDF viewer ---------- */
+#viewer{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:0 0 24px;background:var(--canvas-subtle);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.viewer-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;border-bottom:1px solid var(--border)}
+#viewer-title{font-weight:600;font-size:.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.viewer-actions{display:flex;gap:12px;align-items:center;flex:none}
+#viewer-open{font-size:.86em}
+#viewer-close{cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--fg);
+  border-radius:6px;padding:4px 10px;font-size:.86em}
+#viewer-close:hover{background:var(--code-bg)}
+#viewer-msg{display:none;padding:18px;color:var(--muted);font-size:.92em}
+#viewer-msg a{font-weight:600}
+#pdf-frame{display:block;width:100%;height:82vh;border:0;background:#fff}
+
+/* ---------- Markdown body (GitHub-like) ---------- */
+.markdown-body .subtitle{margin:-2px 0 22px;font-size:1.2em;line-height:1.45;color:var(--muted);max-width:48em}
+.markdown-body .subtitle em{font-style:italic}
+.markdown-body h1,.markdown-body h2{padding-bottom:.3em;border-bottom:1px solid var(--border-muted);margin:24px 0 16px}
+.markdown-body h1{font-size:2em}.markdown-body h2{font-size:1.5em}
+.markdown-body h3{font-size:1.25em;margin:24px 0 16px}.markdown-body h4{font-size:1em;margin:24px 0 16px}
+.markdown-body h1,.markdown-body h2,.markdown-body h3,.markdown-body h4{font-weight:600;line-height:1.25}
+.markdown-body p,.markdown-body ul,.markdown-body ol{margin:0 0 16px}
+.markdown-body li{margin:.25em 0}
+.markdown-body ul,.markdown-body ol{padding-left:2em}
+.markdown-body img{max-width:100%;height:auto;background:transparent}
+.markdown-body hr{height:1px;background:var(--border-muted);border:0;margin:24px 0}
+.markdown-body code{background:var(--code-bg);padding:.2em .4em;border-radius:6px;font-size:85%;
+  font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace}
+.markdown-body pre{background:var(--canvas-subtle);padding:16px;border-radius:8px;overflow:auto}
+.markdown-body pre code{background:none;padding:0}
+.markdown-body blockquote{margin:0 0 16px;padding:0 1em;color:var(--muted);border-left:.25em solid var(--border)}
+.markdown-body a:has(>img),.markdown-body p>img{vertical-align:middle}
+
+/* tables */
+.markdown-body table{border-collapse:collapse;display:block;width:max-content;max-width:100%;
+  overflow:auto;margin:0 0 16px;font-size:.95em}
+.markdown-body th,.markdown-body td{border:1px solid var(--border-muted);padding:6px 13px}
+.markdown-body th{background:var(--canvas-subtle);font-weight:600}
+.markdown-body tr:nth-child(2n) td{background:var(--canvas-subtle)}
+
+/* alerts */
+.markdown-alert{padding:8px 16px;margin:0 0 16px;border-left:.25em solid var(--border);border-radius:6px}
+.markdown-alert>:first-child{margin-top:0}.markdown-alert>:last-child{margin-bottom:0}
+.markdown-alert .markdown-alert-title{display:flex;align-items:center;gap:8px;font-weight:600;margin:0 0 8px;line-height:1}
+.markdown-alert .octicon{fill:currentColor;flex:none}
+.markdown-alert-note{border-left-color:var(--note);background:var(--note-bg)}
+.markdown-alert-note .markdown-alert-title{color:var(--note)}
+.markdown-alert-tip{border-left-color:var(--tip);background:var(--tip-bg)}
+.markdown-alert-tip .markdown-alert-title{color:var(--tip)}
+.markdown-alert-important{border-left-color:var(--important);background:var(--important-bg)}
+.markdown-alert-important .markdown-alert-title{color:var(--important)}
+.markdown-alert-warning{border-left-color:var(--warning);background:var(--warning-bg)}
+.markdown-alert-warning .markdown-alert-title{color:var(--warning)}
+.markdown-alert-caution{border-left-color:var(--caution);background:var(--caution-bg)}
+.markdown-alert-caution .markdown-alert-title{color:var(--caution)}
+
+/* centered figure blocks from the source */
+.markdown-body p[align="center"]{text-align:center}
+.markdown-body p[align="center"] i,.markdown-body p[align="center"] em{color:var(--muted);font-size:.9em}
+
+/* footnotes */
+.markdown-body .footnotes{font-size:.85em;color:var(--muted);border-top:1px solid var(--border-muted);margin-top:36px;padding-top:8px}
+.markdown-body .footnotes ol{padding-left:1.3em}
+.markdown-body .footnotes li{margin:.4em 0}
+.markdown-body .footnotes p{margin:0}
+.markdown-body sup.fnref{font-size:.72em;line-height:0;font-weight:600}
+.markdown-body .fn-back{margin-left:6px;text-decoration:none;font-weight:600}
+.markdown-body a.paper-inline{white-space:nowrap}
+
+/* bilingual */
+html[data-lang="en"] .lang-zh{display:none}
+html[data-lang="zh"] .lang-en{display:none}
+.markdown-body.lang-zh{line-height:1.7}
+#lang-toggle{position:fixed;top:14px;right:16px;z-index:60;display:flex;border:1px solid var(--border);
+  border-radius:999px;overflow:hidden;background:var(--bg);box-shadow:0 1px 6px rgba(0,0,0,.15)}
+#lang-toggle button{border:0;background:transparent;color:var(--muted);padding:6px 13px;cursor:pointer;
+  font-size:.84em;font-weight:700;line-height:1.6}
+#lang-toggle button.active{background:var(--link);color:#fff}
+@media (max-width:767px){#lang-toggle{top:8px;right:8px}}
+
+</style>
+</head>
+<body>
+<div id="lang-toggle" role="group" aria-label="language"><button type="button" data-set="en">EN</button><button type="button" data-set="zh">中文</button></div>
+<div class="wrap">
+<details id="papers"><summary><span class="papers-title"><span class="lang-en">📚 Papers</span><span class="lang-zh">📚 论文</span></span><span class="papers-sub"><span class="lang-en">45 source papers — click any to read it inline</span><span class="lang-zh">45 篇原始论文 — 点击任意一篇即可在页面内阅读</span></span></summary><div class="papers-body">
+<details class="sec"><summary><span class="lang-en">1 · Deep Neural Networks</span><span class="lang-zh">1 · 深度神经网络</span> <span class="cnt">5</span></summary><ul>
+<li><a class="paper" href="01-deep-neural-networks/01-dnn/01-dnn.pdf" target="_blank" rel="noopener" data-src="01-deep-neural-networks/01-dnn/01-dnn.pdf"><span class="lang-en">DNN</span><span class="lang-zh">DNN</span></a></li>
+<li><a class="paper" href="01-deep-neural-networks/02-cnn/01-cnn.pdf" target="_blank" rel="noopener" data-src="01-deep-neural-networks/02-cnn/01-cnn.pdf"><span class="lang-en">CNN</span><span class="lang-zh">CNN</span></a></li>
+<li><a class="paper" href="01-deep-neural-networks/02-cnn/02-le-net.pdf" target="_blank" rel="noopener" data-src="01-deep-neural-networks/02-cnn/02-le-net.pdf"><span class="lang-en">LeNet</span><span class="lang-zh">LeNet</span></a></li>
+<li><a class="paper" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" target="_blank" rel="noopener" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf"><span class="lang-en">AlexNet</span><span class="lang-zh">AlexNet</span></a></li>
+<li><a class="paper" href="01-deep-neural-networks/04-u-net/01-u-net.pdf" target="_blank" rel="noopener" data-src="01-deep-neural-networks/04-u-net/01-u-net.pdf"><span class="lang-en">U-Net</span><span class="lang-zh">U-Net</span></a></li>
+</ul></details>
+<details class="sec"><summary><span class="lang-en">2 · Optimization &amp; Regularization</span><span class="lang-zh">2 · 优化与正则化</span> <span class="cnt">8</span></summary><ul>
+<li><a class="paper" href="02-optimization-and-regularization/01-weight-decay/01-weight-decay.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/01-weight-decay/01-weight-decay.pdf"><span class="lang-en">Weight Decay</span><span class="lang-zh">权重衰减</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/02-relu/01-relu.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/02-relu/01-relu.pdf"><span class="lang-en">ReLU</span><span class="lang-zh">ReLU</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/03-residuals/01-residuals.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/03-residuals/01-residuals.pdf"><span class="lang-en">Residuals</span><span class="lang-zh">残差</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/04-dropout/01-dropout.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/04-dropout/01-dropout.pdf"><span class="lang-en">Dropout</span><span class="lang-zh">Dropout</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/05-batch-norm/01-batch-norm.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/05-batch-norm/01-batch-norm.pdf"><span class="lang-en">Batch Normalization</span><span class="lang-zh">批归一化</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/06-layer-norm/01-layer-norm.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/06-layer-norm/01-layer-norm.pdf"><span class="lang-en">Layer Normalization</span><span class="lang-zh">层归一化</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/07-gelu/01-gelu.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/07-gelu/01-gelu.pdf"><span class="lang-en">GELU</span><span class="lang-zh">GELU</span></a></li>
+<li><a class="paper" href="02-optimization-and-regularization/08-adam/01-adam.pdf" target="_blank" rel="noopener" data-src="02-optimization-and-regularization/08-adam/01-adam.pdf"><span class="lang-en">Adam</span><span class="lang-zh">Adam</span></a></li>
+</ul></details>
+<details class="sec"><summary><span class="lang-en">3 · Sequence Modeling</span><span class="lang-zh">3 · 序列建模</span> <span class="cnt">9</span></summary><ul>
+<li><a class="paper" href="03-sequence-modeling/01-rnn/01-rnn.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/01-rnn/01-rnn.pdf"><span class="lang-en">RNN</span><span class="lang-zh">RNN</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/02-lstm/01-lstm.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/02-lstm/01-lstm.pdf"><span class="lang-en">LSTM</span><span class="lang-zh">LSTM</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/03-learning-to-forget/01-learning-to-forget.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/03-learning-to-forget/01-learning-to-forget.pdf"><span class="lang-en">Learning to Forget</span><span class="lang-zh">学会遗忘</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/04-word2vec/01-word2vec.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/04-word2vec/01-word2vec.pdf"><span class="lang-en">Word2Vec</span><span class="lang-zh">Word2Vec</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/04-word2vec/02-phrase2vec.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/04-word2vec/02-phrase2vec.pdf"><span class="lang-en">Phrase2Vec</span><span class="lang-zh">Phrase2Vec</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/05-seq2seq/01-seq2seq.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/05-seq2seq/01-seq2seq.pdf"><span class="lang-en">Seq2Seq</span><span class="lang-zh">Seq2Seq</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/05-seq2seq/02-encoder-decoder.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/05-seq2seq/02-encoder-decoder.pdf"><span class="lang-en">Encoder-Decoder</span><span class="lang-zh">编码器-解码器</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/06-attention/01-attention.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/06-attention/01-attention.pdf"><span class="lang-en">Attention</span><span class="lang-zh">注意力</span></a></li>
+<li><a class="paper" href="03-sequence-modeling/07-mixture-of-experts/01-mixture-of-experts.pdf" target="_blank" rel="noopener" data-src="03-sequence-modeling/07-mixture-of-experts/01-mixture-of-experts.pdf"><span class="lang-en">Mixture of Experts</span><span class="lang-zh">专家混合</span></a></li>
+</ul></details>
+<details class="sec"><summary><span class="lang-en">4 · Transformers</span><span class="lang-zh">4 · Transformer</span> <span class="cnt">12</span></summary><ul>
+<li><a class="paper" href="04-transformers/01-transformer/01-transformer.pdf" target="_blank" rel="noopener" data-src="04-transformers/01-transformer/01-transformer.pdf"><span class="lang-en">Transformer</span><span class="lang-zh">Transformer</span></a></li>
+<li><a class="paper" href="04-transformers/02-bert/01-bert.pdf" target="_blank" rel="noopener" data-src="04-transformers/02-bert/01-bert.pdf"><span class="lang-en">BERT</span><span class="lang-zh">BERT</span></a></li>
+<li><a class="paper" href="04-transformers/02-bert/02-roberta.pdf" target="_blank" rel="noopener" data-src="04-transformers/02-bert/02-roberta.pdf"><span class="lang-en">RoBERTa</span><span class="lang-zh">RoBERTa</span></a></li>
+<li><a class="paper" href="04-transformers/03-t5/01-t5.pdf" target="_blank" rel="noopener" data-src="04-transformers/03-t5/01-t5.pdf"><span class="lang-en">T5</span><span class="lang-zh">T5</span></a></li>
+<li><a class="paper" href="04-transformers/04-gpt/01-gpt-2.pdf" target="_blank" rel="noopener" data-src="04-transformers/04-gpt/01-gpt-2.pdf"><span class="lang-en">GPT-2</span><span class="lang-zh">GPT-2</span></a></li>
+<li><a class="paper" href="04-transformers/04-gpt/02-gpt-3.pdf" target="_blank" rel="noopener" data-src="04-transformers/04-gpt/02-gpt-3.pdf"><span class="lang-en">GPT-3</span><span class="lang-zh">GPT-3</span></a></li>
+<li><a class="paper" href="04-transformers/05-lora/01-lora.pdf" target="_blank" rel="noopener" data-src="04-transformers/05-lora/01-lora.pdf"><span class="lang-en">LoRA</span><span class="lang-zh">LoRA</span></a></li>
+<li><a class="paper" href="04-transformers/06-rlhf/01-rlhf.pdf" target="_blank" rel="noopener" data-src="04-transformers/06-rlhf/01-rlhf.pdf"><span class="lang-en">RLHF</span><span class="lang-zh">RLHF</span></a></li>
+<li><a class="paper" href="04-transformers/06-rlhf/02-ppo.pdf" target="_blank" rel="noopener" data-src="04-transformers/06-rlhf/02-ppo.pdf"><span class="lang-en">PPO</span><span class="lang-zh">PPO</span></a></li>
+<li><a class="paper" href="04-transformers/06-rlhf/03-instruct-gpt.pdf" target="_blank" rel="noopener" data-src="04-transformers/06-rlhf/03-instruct-gpt.pdf"><span class="lang-en">InstructGPT</span><span class="lang-zh">InstructGPT</span></a></li>
+<li><a class="paper" href="04-transformers/06-rlhf/04-helpful-and-harmless.pdf" target="_blank" rel="noopener" data-src="04-transformers/06-rlhf/04-helpful-and-harmless.pdf"><span class="lang-en">Helpful &amp; Harmless</span><span class="lang-zh">有用且无害</span></a></li>
+<li><a class="paper" href="04-transformers/07-vision-transformer/01-vision-transformer.pdf" target="_blank" rel="noopener" data-src="04-transformers/07-vision-transformer/01-vision-transformer.pdf"><span class="lang-en">Vision Transformer</span><span class="lang-zh">视觉 Transformer</span></a></li>
+</ul></details>
+<details class="sec"><summary><span class="lang-en">5 · Image Generation</span><span class="lang-zh">5 · 图像生成</span> <span class="cnt">11</span></summary><ul>
+<li><a class="paper" href="05-image-generation/01-gan/01-gan.pdf" target="_blank" rel="noopener" data-src="05-image-generation/01-gan/01-gan.pdf"><span class="lang-en">GAN</span><span class="lang-zh">GAN</span></a></li>
+<li><a class="paper" href="05-image-generation/02-vae/01-vae.pdf" target="_blank" rel="noopener" data-src="05-image-generation/02-vae/01-vae.pdf"><span class="lang-en">VAE</span><span class="lang-zh">VAE</span></a></li>
+<li><a class="paper" href="05-image-generation/02-vae/02-vq-vae.pdf" target="_blank" rel="noopener" data-src="05-image-generation/02-vae/02-vq-vae.pdf"><span class="lang-en">VQ-VAE</span><span class="lang-zh">VQ-VAE</span></a></li>
+<li><a class="paper" href="05-image-generation/02-vae/03-vq-vae-2.pdf" target="_blank" rel="noopener" data-src="05-image-generation/02-vae/03-vq-vae-2.pdf"><span class="lang-en">VQ-VAE-2</span><span class="lang-zh">VQ-VAE-2</span></a></li>
+<li><a class="paper" href="05-image-generation/03-diffusion/01-diffusion.pdf" target="_blank" rel="noopener" data-src="05-image-generation/03-diffusion/01-diffusion.pdf"><span class="lang-en">Diffusion</span><span class="lang-zh">扩散</span></a></li>
+<li><a class="paper" href="05-image-generation/03-diffusion/02-denoising-diffusion.pdf" target="_blank" rel="noopener" data-src="05-image-generation/03-diffusion/02-denoising-diffusion.pdf"><span class="lang-en">Denoising Diffusion</span><span class="lang-zh">去噪扩散</span></a></li>
+<li><a class="paper" href="05-image-generation/03-diffusion/03-denoising-diffusion-2.pdf" target="_blank" rel="noopener" data-src="05-image-generation/03-diffusion/03-denoising-diffusion-2.pdf"><span class="lang-en">Denoising Diffusion 2</span><span class="lang-zh">去噪扩散 2</span></a></li>
+<li><a class="paper" href="05-image-generation/03-diffusion/04-diffusion-beats-gans.pdf" target="_blank" rel="noopener" data-src="05-image-generation/03-diffusion/04-diffusion-beats-gans.pdf"><span class="lang-en">Diffusion Beats GANs</span><span class="lang-zh">扩散超越 GAN</span></a></li>
+<li><a class="paper" href="05-image-generation/04-clip/01-clip.pdf" target="_blank" rel="noopener" data-src="05-image-generation/04-clip/01-clip.pdf"><span class="lang-en">CLIP</span><span class="lang-zh">CLIP</span></a></li>
+<li><a class="paper" href="05-image-generation/05-dall-e/01-dall-e.pdf" target="_blank" rel="noopener" data-src="05-image-generation/05-dall-e/01-dall-e.pdf"><span class="lang-en">DALL·E</span><span class="lang-zh">DALL·E</span></a></li>
+<li><a class="paper" href="05-image-generation/05-dall-e/02-dall-e-2.pdf" target="_blank" rel="noopener" data-src="05-image-generation/05-dall-e/02-dall-e-2.pdf"><span class="lang-en">DALL·E 2</span><span class="lang-zh">DALL·E 2</span></a></li>
+</ul></details>
+</div></details>
+<div id="viewer" hidden><div class="viewer-bar"><span id="viewer-title">PDF</span><span class="viewer-actions"><a id="viewer-open" href="#" target="_blank" rel="noopener"><span class="lang-en">Open in new tab &#8599;</span><span class="lang-zh">在新标签页打开 &#8599;</span></a><button id="viewer-close" type="button"><span class="lang-en">&#10005; Close</span><span class="lang-zh">&#10005; 关闭</span></button></span></div><div id="viewer-msg"></div><iframe id="pdf-frame" title="PDF viewer"></iframe></div>
+
+<article class="markdown-body lang-en">
+<h1 id="en-deep-learning">Deep Learning</h1>
+<p class="subtitle"><em>A first-principles history of deep learning — reframed as the series of advances that gradually raised the ceiling on the seven constraints that limit the capacity of digital intelligence.</em></p>
+<p>A deep-dive on the entire history of deep learning, highlighting the series of innovations that got us from simple feed-forward networks to GPT-4o.</p>
+<p>For each key milestone, I've included the critical papers in this repository, along with my notes, my explanation of important intuitions &amp; math, and a toy implementation in pytorch when relevant.</p>
+<p>The rest of this page is my breakdown of everything we can learn from this history, and what it tells us about the future of deep learning, inspired by <a href="https://www.amazon.com/Lessons-History-Will-Durant/dp/143914995X" target="_blank" rel="noopener"><em>The Lessons of History</em></a> by Will &amp; Ariel Durant.</p>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p><p><strong>This project is designed so everyone can get most of the value by just reading my overview on the rest of this page.</strong></p>
+<p>Then, people curious to learn about the technical details of each innovation can explore the rest of the repository via the links in the <a href="#en-resources">resources</a> section.</p></div>
+<h2 id="en-table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#en-overview">Overview</a><ul>
+<li><a href="#en-1-constraints">1. Constraints</a><ul>
+<li><a href="#en-11-data">1.1. Data</a></li>
+<li><a href="#en-12-parameters">1.2. Parameters</a></li>
+<li><a href="#en-13-optimization-regularization">1.3. Optimization &amp; Regularization</a></li>
+<li><a href="#en-14-architecture">1.4. Architecture</a></li>
+<li><a href="#en-15-compute">1.5. Compute</a></li>
+<li><a href="#en-16-compute-efficiency">1.6. Compute Efficiency</a></li>
+<li><a href="#en-17-energy">1.7. Energy</a></li>
+<li><a href="#en-18-constraints-leverage">1.8. Constraints &amp; Leverage</a></li>
+</ul>
+</li>
+<li><a href="#en-2-narratives">2. Narratives</a></li>
+<li><a href="#en-3-inspiration">3. Inspiration</a></li>
+<li><a href="#en-4-intelligence">4. Intelligence</a></li>
+<li><a href="#en-5-future">5. Future</a></li>
+</ul>
+</li>
+<li><a href="#en-resources">Resources</a><ul>
+<li><a href="#en-topics">Topics</a></li>
+<li><a href="#en-implementations">Implementations</a></li>
+<li><a href="#en-papers-list">Papers</a></li>
+</ul>
+</li>
+</ul>
+<p><br /></p>
+<h1 id="en-overview">Overview</h1>
+<p>The most interesting part of my deep-dive came from noticing a clear trend across all the key advancements, which has completely reframed how I understand deep learning:</p>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p><p><strong>There are 7 simple constraints that limit the capacity of digital intelligence:</strong></p>
+<ol>
+<li>data</li>
+<li>parameters</li>
+<li>optimization &amp; regularization</li>
+<li>architecture</li>
+<li>compute</li>
+<li>compute efficiency</li>
+<li>energy</li>
+</ol>
+<p><strong>The entire history of deep learning can be seen as the series of advancements that have gradually raised the ceiling on these constraints</strong>, enabling the creation of increasingly intelligent systems.</p></div>
+<p>It's impossible to understand where we're going without first understanding how we got here - and it's impossible to understand how we got here without understanding these constraints, which have always governed the rate of progress.</p>
+<p>By understanding them, we can also explore a few related questions:</p>
+<ul>
+<li>How is progress made in deep learning?</li>
+<li>Where do the ideas that drive progress in deep learning come from?</li>
+<li>How have our narratives about digital intelligence changed over time?</li>
+<li>What does deep learning teach us about our own intelligence?</li>
+<li>Where is the future of deep learning headed?</li>
+</ul>
+<p>So, let's start by understanding these constraints from first principles.</p>
+<p><br /></p>
+<h1 id="en-1-constraints">1. Constraints</h1>
+<p>We can define intelligence<sup class="fnref" id="en-fnref-1"><a href="#en-fn-1">1</a></sup> as the ability to accurately model reality<sup class="fnref" id="en-fnref-2"><a href="#en-fn-2">2</a></sup>. Practically, we're interested in models of reality that are useful for performing economically valuable tasks.</p>
+<p>The goal of deep learning is to produce accurate models of reality for these useful tasks by:</p>
+<ol>
+<li>Treating the true models that describe reality as complex probability distributions<sup class="fnref" id="en-fnref-3"><a href="#en-fn-3">3</a></sup></li>
+<li>Creating neural networks capable of modeling complex probability distributions</li>
+<li>Training these networks to learn to model the probability distributions that underlie reality</li>
+</ol>
+<p>In this view, creating intelligence with deep learning involves just two steps:</p>
+<ol>
+<li>Collect useful information about reality (collect data)</li>
+<li>Create a neural network that can effectively learn from this information (model data)</li>
+</ol>
+<p>The only way to increase the intelligence of our model is to improve how well we accomplish each of these steps.</p>
+<p>With this in mind, we can look at the constraints that govern this process. Let's start by understanding the constraint on data.</p>
+<p><br /></p>
+<h2 id="en-11-data">1.1. Data</h2>
+<p><img alt="constraint-1-data" src="images/readme/constraint-1-data.png" /></p>
+<p>We've established that the goal of deep learning is to model the probability distributions that describe reality.</p>
+<p>Let's call the distribution that we're trying to model for a specific task the <em>true distribution</em>. In order to learn about the true distribution, we collect many samples from it. These samples make up a <em>dataset</em>.</p>
+<p>The dataset contains some information about the true distribution, but it doesn't contain <em>all</em> information about the true distribution<sup class="fnref" id="en-fnref-4"><a href="#en-fn-4">4</a></sup>. Because of this, the dataset represents an approximation of the true distribution, which we'll call the <em>empirical distribution</em>.</p>
+<p><strong>At best, we can expect our neural network to learn to model this empirical distribution<sup class="fnref" id="en-fnref-5"><a href="#en-fn-5">5</a></sup>.</strong></p>
+<p>However, our original goal was to model the true distribution. To account for this, we need the empirical distribution to be <strong>a good approximation</strong> of the true distribution. The quality of this approximation determines the cap of how good a model trained on the dataset can get.</p>
+<p>This is the first constraint on the intelligence of a neural network.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #1: A model can only be as good as the dataset it was trained on.</strong></p>
+<p>Specifically, the cap on how well a model can approximate the true distribution is determined by how much information about the true distribution is contained within the dataset.</p></div>
+<h3>A Good Approximation</h3>
+<p>To make the empirical distribution a better approximation of the true distribution, we need to include more information about the true distribution in the dataset.</p>
+<p>We can increase the total information in the dataset by the information in each individual sample (intuitively, this means using samples that are more informative for the relevant task).</p>
+<p>We can also increase the information in the dataset by adding more samples that offer new information about the true distribution<sup class="fnref" id="en-fnref-6"><a href="#en-fn-6">6</a></sup>.</p>
+<p><strong>To simplify, there are two ways to improve the quality of the dataset:</strong></p>
+<ol>
+<li>data quality</li>
+<li>data quantity</li>
+</ol>
+<p>This is not because more data is always good<sup class="fnref" id="en-fnref-7"><a href="#en-fn-7">7</a></sup>, but because we want more information about the true distribution in the dataset so the model can learn a sufficient approximation of it.</p>
+<p>With this understanding of the data constraint and how to improve the quality of datasets, we can look at how progress in this dimension has impacted the history of deep learning.</p>
+<h3>Breakthrough #1: Large Labeled Datasets</h3>
+<p>Early machine learning relied on datasets collected by individual research teams. Despite the development of effective approaches to deep learning, datasets weren't large enough to prove their advantages.</p>
+<p>The introduction of datasets like <a href="https://en.wikipedia.org/wiki/MNIST_database" target="_blank" rel="noopener">MNIST</a> and <a href="https://en.wikipedia.org/wiki/ImageNet" target="_blank" rel="noopener">ImageNet</a> drastically increased the availability of high quality datasets large enough to effectively train deep learning models.</p>
+<p>Early <a href="01-deep-neural-networks/02-cnn/03-cnn.ipynb">CNNs</a> like <a class="paper-inline" href="01-deep-neural-networks/02-cnn/02-le-net.pdf" data-src="01-deep-neural-networks/02-cnn/02-le-net.pdf">LeNet</a> and <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> used these datasets to show that deep neural networks could compete with the traditional machine learning approaches used at the time.</p>
+<p>It's easy to take for granted the impact of these datasets now, as they have long been obselete - but they clearly had a huge impact on the field. Notably, AlexNet, which <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">completely changed the field of deep learning</a>, could not have existed without the creation of the ImageNet dataset.</p>
+<p><strong>The introduction of large labeled datasets can be seen as the first breakthrough in pushing the data constraint toward larger datasets.</strong></p>
+<p>Though useful, these datasets were inherently unscalable due to the manual labeling process they rely on. In order to push the data constraint to the next level with even larger datasets, a new approach to data was needed.</p>
+<h3>Breakthrough #2: Unlocking the Internet</h3>
+<p>The internet is the most obvious source of massive amounts of data that could plausibly be used for deep learning. However, it was initially unclear how to use this data to train a deep learning model.</p>
+<p>Unlike labeled datasets, internet data is not created for a specific tasks, so it didn't appear to contain high quality data that could contribute to training a specific model. For this reason, internet data appeared to be unusable in deep learning for a long time<sup class="fnref" id="en-fnref-8"><a href="#en-fn-8">8</a></sup>.</p>
+<p><a href="04-transformers/02-bert/03-bert.ipynb">BERT</a> completely changed this. BERT popularized the <strong>transfer learning</strong> paradigm now used by all large language models (including <a href="04-transformers/04-gpt/03-gpt.ipynb">GPTs</a>) - the model was <em>pre-trained</em> on a large portion of the internet (high quantity, unpredictable quality), and then <em>fine-tuned</em> on smaller datasets (low quantity, high quality).</p>
+<p><strong>For the first time ever, BERT showed that we could actually make internet-scale datasets useful.</strong></p>
+<p>The results also shocked the broader tech community - for example, <a href="https://x.com/TechEmails/status/1756765277478621620" target="_blank" rel="noopener">causing a Google executive to express</a> that an AI system would inevitably replace Google search in the near future.</p>
+<p>For those curious, the <a href="04-transformers/05-lora/02-lora.ipynb">LoRA</a> paper further developed on why the transfer learning paradigm developed by BERT and used by all modern LLMs may be so effective.</p>
+<h3>Breakthrough #3: Training Assistants</h3>
+<p><a href="04-transformers/02-bert/03-bert.ipynb">BERT</a> and the <a href="04-transformers/04-gpt/03-gpt.ipynb">GPTs</a> were technically impressive but didn't immediately reach the mainstream until the release of ChatGPT.</p>
+<p><a href="04-transformers/06-rlhf/05-rlhf.ipynb">InstructGPT</a> was the breakthrough that enabled this. It used <a href="04-transformers/06-rlhf/">RLHF</a> techniques to fine-tune the base GPT-3 model using a human generated dataset of question-answer pairs deemed good responses for a helpful assistant.</p>
+<p>By learning to behave effectively as an assistant, InstructGPT created the practical communication style that enabled ChatGPT to succeed.</p>
+<p><strong>The success of InstructGPT is an indication of how high-leverage data quality can be when fine-tuning language-models.</strong></p>
+<p>Though many fine-tuned models existed before the instruct series, InstructGPT was far preferred to almost everything else at the time due to the high quality data it was trained on.</p>
+<h3>Beyond Internet Data</h3>
+<p>How much more can we improve the quality of the datasets deep learning models are trained on to improve the capacity for models to become intelligent?</p>
+<p>The amount of data generated on the internet is increasing exponentially, which should continue to provide a source of increasingly large datasets to train on<sup class="fnref" id="en-fnref-9"><a href="#en-fn-9">9</a></sup>.</p>
+<p>However, there's another question about the quality of the data on internet-scale datasets. We want our systems to model reality - whereas the internet can be understood as a (highly) lossy compression of the true laws of reality<sup class="fnref" id="en-fnref-10"><a href="#en-fn-10">10</a></sup>.</p>
+<p>Because of this, the abundance of humanoid robots may present a new means of data collection for deep learning models that gives direct access to information about reality - which makes <a href="https://www.reuters.com/technology/robotics-startup-figure-raises-675-mln-microsoft-nvidia-other-big-techs-2024-02-29/" target="_blank" rel="noopener">OpenAI &amp; Microsoft's investment and collaboration with Figure</a> particularly interesting.</p>
+<p>Regardless, current scaling laws have shown that current models are far from reaching the capacity of the information available in internet-scale datasets, meaning we may be far away from the point where data becomes the constraint again.</p>
+<h3>Modeling Data</h3>
+<p>Now that we've understood the data constraint, we can explore what constrains how effectively the neural network can model the data.</p>
+<p>This determines how close to modeling the empirical distribution the model will get, which corresponds with its intelligence.</p>
+<p>The first constraint that determines the capacity for the model to learn the empirical distribution is the number of parameters in the neural network.</p>
+<p><br /></p>
+<h2 id="en-12-parameters">1.2. Parameters</h2>
+<p><img alt="constraint-2-parameters" src="images/readme/constraint-2-parameters.png" /></p>
+<p>The model needs to have enough <em>representational capacity</em> to be able to learn the empirical distribution of the dataset.</p>
+<p>This means the neural network needs to have parameters to provide enough degrees of freedom to accurately model the distribution. In practice, it's challenging to predict the minimal number of parameters needed to fully model a dataset.</p>
+<p>However, when the amount of information in the dataset is far beyond what the network is capable of modeling, the easiest way to improve the network is to scale up the number of parameters - which can mean increasing the depth of the network and adding more parameters per layer.</p>
+<p>With modern internet-scale datasets, the complexity is massive, so the approach of adding more parameters shows no signs of slowing down in terms of its efficacy at improving the intelligence of models.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #2: The representational capacity of a model is bounded by the number of parameters it contains.</strong></p></div>
+<p>In practice, we'll see that increasing the number of parameters in a neural network is actually a function of the other constraints.</p>
+<p>Let's look at the times in the past where this constraint has been particularly relevant.</p>
+<h3>Breakthrough #1: Increasing Depth</h3>
+<p>The earliest neural networks consisted of just a single input and output layer, heavily limiting their representational capacity.</p>
+<p>The original <a class="paper-inline" href="01-deep-neural-networks/01-dnn/01-dnn.pdf" data-src="01-deep-neural-networks/01-dnn/01-dnn.pdf">backpropagation paper</a> discussed the addition of a hidden layer, adding more parameters to the network which significantly increased it's ability to represent more complex problems (like shift-registers, the XOR gate, etc. - all very simple examples, but impressive at the time).</p>
+<p><a href="01-deep-neural-networks/03-alex-net/02-alex-net.ipynb">AlexNet</a> is one of the clearest examples of increasing parameters leading to better models<sup class="fnref" id="en-fnref-11"><a href="#en-fn-11">11</a></sup> - the AlexNet architecture used 5 convolutional layers, far more than the previous largest CNN at the time, which enabled it to crush the previous best score in the ImageNet competition.</p>
+<p>However, early on, size appeared to be one of many factors constraining the improvement of models, rather than the most important constraint.</p>
+<h3>Breakthrough #2: Scaling Laws</h3>
+<p>The <a href="04-transformers/04-gpt/">GPT</a> series made it clear that for internet datasets, scaling parameters appears to be sufficient to significantly increase model quality.</p>
+<p>The scaling laws show no sign of letting up, which has motivated the current continued attempts at training larger and larger models.</p>
+<p align="center"><img src="images/readme/scaling-laws.png" alt="Scaling Laws" width="50%" /></p>
+<p align="center"><i>Scaling laws for model performance as a function of parameters</i></p>
+<p><strong>Importantly, the reason for this trend is not that increasing the number of parameters in a model always increases it's intelligence.</strong> Instead, it's due to the fact that current models still don't have enough representational capacity to capture all the information in internet-scale datasets.</p>
+<p>As mentioned previosly, increasing the number of parameters in a neural network is actually governed by the other constraints.</p>
+<p><br /></p>
+<h2 id="en-13-optimization-regularization">1.3. Optimization &amp; Regularization</h2>
+<p><img alt="constraint-3-optimization-and-regularization" src="images/readme/constraint-3-optimization-and-regularization.png" /></p>
+<p>In reality, you can't keep scaling up the number of parameters in a model and expect quality to keep increasing. Scaling up a model (via increasing the depth or the number of parameters per layer) introduces two new classes of problems.</p>
+<p>First, increasing the depth of a network can make it take far longer to converge to an optimal solution, or in the worst cases, can prevent the network from converging.</p>
+<p><strong>The process of ensuring models can converge effectively, even as they grow in depth, is known as optimization.</strong></p>
+<p>Additionally, when you scale up the number of parameters in a model so it's representational capacity exceeds the complexity of the empirical distribution, the model can start fitting trivial <em>noise</em> in the distribution. This effect is known as <em>overfitting</em>.</p>
+<p><strong>The process of regularization is used to ensure models learn useful <em>generalizations</em> of the dataset and don't overfit to noise.</strong></p>
+<p>In practice, the actual depth of a network is constrained by the efficacy of the optimization &amp; regularization strategies used.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #3: The efficacy of optimization &amp; regularization approaches constrains the number of parameters a network can handle while still being able to converge and generalize.</strong></p></div>
+<h3>Breakthrough #1: Taming Gradients</h3>
+<p>While training deeper neural networks with <a href="01-deep-neural-networks/01-dnn/02-dnn.ipynb">backpropagation</a>, gradients start to get magnified or disappear, due to the compounding effects of multiplication by sequences of large or small weights<sup class="fnref" id="en-fnref-12"><a href="#en-fn-12">12</a></sup>.</p>
+<p><strong>This is known as the vanishing and exploding gradients problem.</strong></p>
+<p>It's easy to forget how prohibitive this problem was - it completely prevented the effective training of networks beyond a few layers in depth, putting a significant constraint on the size of networks.</p>
+<p>The introduction of <a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">residuals</a> via the <a class="paper-inline" href="02-optimization-and-regularization/03-residuals/01-residuals.pdf" data-src="02-optimization-and-regularization/03-residuals/01-residuals.pdf">ResNet</a> architecture completely solved this problem by creating <em>residual pathways</em> for gradients to flow effectively through networks of arbitrary depth.</p>
+<p>This unlock removed a significant constraint on network depth, enabling much larger networks to be trained (which removed a cap on parameters that existed for a long time before this).</p>
+<h3>Breakthrough #2: Network of Networks</h3>
+<p><a href="02-optimization-and-regularization/04-dropout/">Dropout</a> introduced a critical regularization strategy that has been used in most networks after it's creation, notably contributing to the success of <a href="01-deep-neural-networks/03-alex-net/02-alex-net.ipynb">AlexNet</a> which initially popularized it.</p>
+<p>Conceptually, the ideal way to prevent a model from overfitting to a particular problem would be to train a variety of neural networks on the same problem and then take the average of their predictions. This process would cancel out the noise fitted by each network, leaving only the true representations.</p>
+<p>However, this naive approach was prohibitively expensive - training multiple large neural networks for a single problem costs more compute.</p>
+<p>Dropout enabled a computationally effective equivalent approach involving randomly blocking out the effects of a subset of neurons in each training run<sup class="fnref" id="en-fnref-13"><a href="#en-fn-13">13</a></sup>, effectively training an exponential number of sub-networks within a neural network and averaging their predictions together.</p>
+<h3>Breakthrough #3: Taming Activations</h3>
+<p>Another problem when training deep networks is that later layers suffer from improving while the activations of earlier layers change, potentially rendering their early stages of training useless.</p>
+<p><strong>This problem is known as internal covariate shift</strong>, and also prohibitted the training of deeper networks.</p>
+<p>The introduction of <a href="02-optimization-and-regularization/05-batch-norm/">Batch Normalization</a> and <a href="02-optimization-and-regularization/06-layer-norm/">Layer Normalization</a> solved this by forcing neuron activations into predictable distributions, preventing the covariate shift problem.</p>
+<p>This breakthrough, combined with residuals, provided the basis for building much deeper networks. Layer Normalization in particular enabled the training of deeper reccurent models like <a href="03-sequence-modeling/01-rnn/02-rnn.ipynb">RNNs</a> and <a href="03-sequence-modeling/02-lstm/02-lstm.ipynb">LSTMs</a>'s that led to the innovations eventually resulting in the <a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a>.</p>
+<h3>Breakthrough #4: Momentum</h3>
+<p>The initial optimization algorithm, <em>stochastic gradient-descent</em>, involves taking a pre-determined step to update the parameters at each time-step.</p>
+<p>In practice, this can be highly inefficient and hurt convergence<sup class="fnref" id="en-fnref-14"><a href="#en-fn-14">14</a></sup>.</p>
+<p>The <a href="02-optimization-and-regularization/08-adam/02-adam.ipynb">Adam</a> optimizer introduced an efficient algorith to keep track of <strong>adaptive moments</strong> tracking the history of gradients throughout the optimization process. This allowed the optimizer to adjust step-sizes based on past information, often leading to much faster convergence.</p>
+<h3>The Forgotten Constraint</h3>
+<p>The advancements mentioned above (and related developments) are all used in most models to date. For example, the <a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a> architecture uses <a href="02-optimization-and-regularization/04-dropout/">Dropout</a>, <a href="02-optimization-and-regularization/06-layer-norm/02-layer-norm.ipynb">Layer Normalization</a>, and <a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">Residuals</a> throughout it's architecture, and was trained using the <a href="02-optimization-and-regularization/08-adam/">Adam</a> optimizer.</p>
+<p>Because of how effective they've been completely removing prior problems, optimization &amp; regularization appear to be largely solved now.</p>
+<p>This is especially augmented by the fact that we're far from reaching the peak of the scaling laws on current internet-scale datasets, so overfitting is not a concern.</p>
+<p><strong>Despite this, it's important to remember that optimization &amp; regularization are still real constraints on the size of neural networks</strong>, although they no longer effect models in their current state.</p>
+<p><br /></p>
+<h2 id="en-14-architecture">1.4. Architecture</h2>
+<p><img alt="constraint-4-architecture" src="images/readme/constraint-4-architecture.png" /></p>
+<p>We covered how increasing the number of parameters in a neural network increases its <em>representational capacity</em>. This can be understood as the networks ability to store <em>useful representations</em> that effectively model the empirical distribution.</p>
+<p>By default, deep neural networks are forced to learn the most optimal ways to store representations for different problems.</p>
+<p>However, when we already know an effective method for the model to store useful representations relevant to a particular problem, it can be helpful to build the ability to store representations in this useful form directly into the model.</p>
+<p><strong>Building specific structures into the neural network design to make it easier for the model to store useful representations is known as adding inductive bias.</strong></p>
+<p>Desiging good neural network architectures into our models is about increasing the density of <em>useful representations</em> in the model, meaning more efficient usage of parameters.</p>
+<p>In this way, improved architectures can achieve similar effects to scaling up parameters.</p>
+<p>In practice, architectural advancements have made previously intractable problems (like image synthesis) possible for neural networks.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #4: The quality of the network architecture constrains the representational capacity of a model.</strong></p></div>
+<p>Technically, a deep neural network with non-linearities is capable of modeling any distribution, given a sufficient number of parameters<sup class="fnref" id="en-fnref-15"><a href="#en-fn-15">15</a></sup>.</p>
+<p>But in practicality, there are distributions with so much complexity that simple deep neural networks can't effectively model them<sup class="fnref" id="en-fnref-16"><a href="#en-fn-16">16</a></sup>. For these distributions, we turn to architectural advancements to make progress.</p>
+<h3>Breakthrough #1: Learning Features</h3>
+<p>The <a href="01-deep-neural-networks/02-cnn/03-cnn.ipynb">Convolutional Neural Network</a> was the first effective architecture that introduced a significant inductive bias into neural networks. The idea behind the CNN is directly inspired by the hierarchical processing of inputs from the brain's vision system.</p>
+<p>CNNs use <em>feature maps</em> that detect high-level features across images to implement the translational invariance that's critical to image recognition tasks.</p>
+<p>This provided a deep learning analogue to the manual feature engineering efforts often used before deep learning was proven.</p>
+<p>CNNs were critical for the initial adoption of deep learning - neural networks like <a class="paper-inline" href="01-deep-neural-networks/02-cnn/02-le-net.pdf" data-src="01-deep-neural-networks/02-cnn/02-le-net.pdf">LeNet</a> and <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> used the architecture to beat the state-of-the-art in image classification competitions. Additionally CNNs are still relevant in modern models with the <a href="01-deep-neural-networks/04-u-net/02-u-net.ipynb">U-Net</a> architecture being used in modern <a href="05-image-generation/03-diffusion/05-diffusion.ipynb">Diffusion</a> models for image generation.</p>
+<h3>Breakthrough #2: Memory</h3>
+<p>The <a href="03-sequence-modeling/01-rnn/02-rnn.ipynb">Recurrent Neural Network</a> introduced the ability to store memories about the past to inform future decisions.</p>
+<p>While theoretically interesting, it remained largely ineffective for sequence-modeling tasks until the introduction of the <a href="03-sequence-modeling/02-lstm/02-lstm.ipynb">Long Short-Term Memory</a> architecture which enabled neural networks to learn complex relationships across time and space by learning to store, retrieve, and <a href="03-sequence-modeling/03-learning-to-forget/02-learning-to-forget.ipynb">forget</a> memories over long time horizons.</p>
+<p><strong>The LSTM inductive bias made them effective at sequence-modeling tasks, kicking off the arc of progress that eventually led to the creation of the Transformer.</strong></p>
+<p>Despite their efficacy, the LSTM was constrained by the fact that it processed input sequences sequentially, making it slow to train.</p>
+<h3>Breakthrough #3: Attention</h3>
+<p>The <a href="03-sequence-modeling/06-attention/02-attention.ipynb">Attention</a> mechanism was initially introduced as an addition to LSTMs to enhance their ability to understand the relationship between concepts.</p>
+<p>The now famous <a class="paper-inline" href="04-transformers/01-transformer/01-transformer.pdf" data-src="04-transformers/01-transformer/01-transformer.pdf"><em>Attention Is All You Need</em></a> paper removed all the LSTM components and demonstrated that the inductive bias of attention alone is effective for sequence-modeling tasks, introducing the <a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a> architecture which has permanently changed deep learning.</p>
+<p><strong>The transformer is particularly effective not just because of the power of the attention mechanism, but because of the high parallelization it achieved by removing recurrence.</strong></p>
+<h3>Breakthrough #4: Harnessing Randomness</h3>
+<p>The CNN introduced the ability to understand samples from the complex distribution of images.</p>
+<p>However, the problem of synthesizing images appeared to be much harder - CNNs could learn to filter out the details in images and focus on high-level features, whereas image geneartion models would need to learn to create both high-level features and complex details.</p>
+<p>Image generation models like <a href="05-image-generation/02-vae/04-vae.ipynb">Variational Auto-Encoders</a> and <a href="05-image-generation/03-diffusion/05-diffusion.ipynb">Diffusion</a> models learn to generate both high-level features and complex details by introducing random sampling and noise directly into their architectures.</p>
+<p>VAEs create a bottleneck that forces the models to learn useful representations in a low dimensional space. Then, they add back noise on top of these representations through random sampling. <strong>So VAEs start by learning representations, and then add noise.</strong></p>
+<p><strong>Diffusion models, instead, starts with noise, and learn to add information into to the noise slowly.</strong></p>
+<p>Without these designs, modern image generation models like <a href="https://arxiv.org/abs/2112.10752" target="_blank" rel="noopener">Stable Diffusion</a> and <a href="05-image-generation/05-dall-e/">DALL E</a> wouldn't exist.</p>
+<h3>Breakthrough #5: Embeddings</h3>
+<p>The <a href="03-sequence-modeling/04-word2vec/03-word2vec.ipynb">Word2Vec</a> model popularized the concept of text embeddings that preserve semantic and syntactic meaning by forcing models to create vector representations for concepts with interesting properties.</p>
+<p>A commonly used example of the power of such embeddings is that the following equation holds true in the embedding space: Emedding("King") - Embedding("Man") + Embedding("Woman") = Embedding("Queen").</p>
+<p>Embeddings show us how the relationships between concepts can be represented in a highly condensed format.</p>
+<p>Later models like <a href="05-image-generation/04-clip/02-clip.ipynb">CLIP</a> based on the <a href="04-transformers/07-vision-transformer/02-vision-transformer.ipynb">Transformer</a> architecture have led to complex embedding spaces mapping understandings of concepts across modalities to a single representation space, enabling multi-modal models like <a class="paper-inline" href="05-image-generation/05-dall-e/02-dall-e-2.pdf" data-src="05-image-generation/05-dall-e/02-dall-e-2.pdf">DALL E 2</a>.</p>
+<h3>"Don't Touch the Architecture"</h3>
+<p>For the past several years after the introduction of the <a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a>, efforts have mainly been focused around scaling up the parameters and data fed into transformers without heavily adjusting the inductive biases.</p>
+<p>This suggests a stagnation in architectural improvement motivated by the efficacy of the Transformer, which may suggest something about the inherent efficacy of the inductive bias of <a href="03-sequence-modeling/06-attention/">Attention</a> in intelligence.</p>
+<p><strong>This explicit desire not to change architectures anymore is <a href="https://www.youtube.com/watch?v=9uw3F6rndnA" target="_blank" rel="noopener">discussed by Andrej Karpathy in this clip</a>.</strong></p>
+<p>Instead of changing base architectures, many state-of-the-art models have been combining different existing architectures together - for example, the <a href="05-image-generation/03-diffusion/05-diffusion.ipynb">Diffusion</a> model design uses the <a href="01-deep-neural-networks/04-u-net/02-u-net.ipynb">U-Net</a> underneath, and <a class="paper-inline" href="05-image-generation/05-dall-e/02-dall-e-2.pdf" data-src="05-image-generation/05-dall-e/02-dall-e-2.pdf">DALL-E-2</a> uses both <a href="05-image-generation/04-clip/02-clip.ipynb">CLIP</a> (which is built with the <a href="04-transformers/07-vision-transformer/02-vision-transformer.ipynb">Vision Transformer</a>) and a <a href="05-image-generation/03-diffusion/05-diffusion.ipynb">Diffusion</a> model.</p>
+<p>The combination of different working architectures has also resulted in the increasing multi-modality of models, indicative in the recent <a href="https://openai.com/index/hello-gpt-4o/" target="_blank" rel="noopener">announcement of GPT-4o</a> which trains a single base model on a variety of modalities (likely combining a variety of architectures underneath, although the implementation details are unreleased.).</p>
+<p><br /></p>
+<h2 id="en-15-compute">1.5. Compute</h2>
+<p><img alt="constraint-5-compute" src="images/readme/constraint-5-compute.png" /></p>
+<p>Assuming an efficient architecture and effective optimization &amp; regularization, the last constraint on the total number of parameters and representational capacity in a model is <strong>compute</strong>.</p>
+<p>During training, the gradient for each parameter needs to be computed and updated at each time-step, which costs computational resources. <strong>So, with more parameters, there are far more computations during back-propagation which becomes the limiting step.</strong></p>
+<p>Because of this, a single device can train a finite number of parameters at once, and beyond this, training has to expand to multiple devices at once to parallelize.</p>
+<p><strong>And if there's a limit on the number of devices we can use for training, we hit a constraint on compute.</strong></p>
+<p>So we can train a certain number of parameters per device. And then we need to get more devices. And if there's a limit on how many devices we can use together, we've hit a constraint on compute.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #5: The total available compute constraints the maximum number of trainable parameters a model can have.</strong></p></div>
+<p>In practice, the constraint may be caused by a lack of resources (to buy devices), supply (due to constrained supply chains), or energy (discussed later)<sup class="fnref" id="en-fnref-17"><a href="#en-fn-17">17</a></sup>.</p>
+<h3>Breakthrough #1: Communicating Compute</h3>
+<p><a href="01-deep-neural-networks/03-alex-net/02-alex-net.ipynb">AlexNet</a> was one of the first major deep learning applications that took advantage of the parallelization capacity of GPUs to train neural networks.</p>
+<p>They were also the first people to train a deep learning model across multiple GPUs at once to speed up training.</p>
+<p><strong>They were able to accomplish this because of the recent addition of the ability for NVIDIA GPUs to write to each others memory</strong>, which enabled much faster direct communication between GPUs rather than communicating through the host machine.</p>
+<p>This innovation (introduced due to gaming, not deep learning), has become critical in training large models, where communication between large clusters of GPUs has become essential.</p>
+<p>This paper pushed the compute constraint in several ways - first, just by using GPUs for training the first place, and additionally by using multiple GPUs to shard training, and using inter-GPU communication.</p>
+<h3>Breakthrough #2: Riding Tailwinds</h3>
+<p>Until the past decade, the GPUs that have enabled deep learning to progress so far were driven forward not by the incentives of deep learning (which offered scarce revenue opportunity early-on for large companies like NVIDIA), but by the tailwinds of the gaming market.</p>
+<p>In this way, deep learning benefited from a bit of luck - the compute tailwinds created by the gaming industry enabled deep learning to take off in a way that likely would not have happened in the absence of gaming.</p>
+<p><strong>The gaming industry raised the constraint on compute for deep learning models by creating a sufficient financial incentive to produce GPUs of increasing quality.</strong></p>
+<p>Through the trail of papers, you can see the quality of compute slowly get better over time, even before dedicated AI compute was created.</p>
+<h3>Breakthrough #3: AI Gets Prioritized</h3>
+<p>Finally, in 2020, NVIDIA released their A100 model built specifically for AI applications, as they determined that AI was a strategic bet worth taking. This decision has now yielding the H100, and soon B100 GPUs that will power much of AI training.</p>
+<p align="center"><img src="images/readme/nvidia-openai.jpeg" alt="NVIDIA x OpenAI" width="50%" /></p>
+<p align="center"><i>Jensen Huang delivering an H200 to early OpenAI</i></p>
+<h3>Breakthrough #4: The Compute Arms Race</h3>
+<p>It wasn't initially obvious that acquiring compute would become a huge constraint.</p>
+<p>The power laws trend that first became visible with <a class="paper-inline" href="04-transformers/02-bert/01-bert.pdf" data-src="04-transformers/02-bert/01-bert.pdf">BERT</a>, <a class="paper-inline" href="04-transformers/02-bert/02-roberta.pdf" data-src="04-transformers/02-bert/02-roberta.pdf">RoBERTa</a>, <a class="paper-inline" href="04-transformers/04-gpt/01-gpt-2.pdf" data-src="04-transformers/04-gpt/01-gpt-2.pdf">GPT-2</a>, and <a class="paper-inline" href="04-transformers/04-gpt/02-gpt-3.pdf" data-src="04-transformers/04-gpt/02-gpt-3.pdf">GPT-3</a> made it clear that scaling up parameters, and thus compute, was a necessary factor of increasing model intelligence.</p>
+<p>As this trend became more clear and the AI narrative became more powerful, everyone began to acquire the necessary compute, leading to a demand volume that wasn't previously predicted by the supply-chain. This has caused a constraint in acquiring compute.</p>
+<p><strong>In addition, the raw cost of acquiring a large amount of compute has become prohibitively expensive for most players.</strong></p>
+<p>These constraints on compute led <a href="https://www.youtube.com/watch?v=r2UmOBrrRK8" target="_blank" rel="noopener">Sam Altman to say that "compute is going to be the currency of the future."</a></p>
+<p><a href="https://www.pcmag.com/news/zuckerbergs-meta-is-spending-billions-to-buy-350000-nvidia-h100-gpus" target="_blank" rel="noopener">Zuck spent several billion to buy 350,000 NVIDIA GPUs</a>, which now appears to be an act of incredible foresight considering the current struggle to get compute.</p>
+<p>This increased demand for compute has also been reflected in the surging market caps of all the essential companies in NVIDIA's compute supply chain including TSMC &amp; ASML.</p>
+<h3>Adjusting Supply Chains</h3>
+<p>The current constraint on compute is partially a result of compute supply chains not having predicted the unexpected jump in demand caused by the AI boom.</p>
+<p>As supply chains inevitably adjust to meet these demands, the constraint will likely shift from who has already obtained the most compute to who has the resources to purchase the most compute, which also positions OpenAI well considering their partnership with the well-resourced Microsoft.</p>
+<h3>AI ASICs</h3>
+<p>In recent fundraising cycles, many startups have raised money to build dedic-ated AI chips for inference and training, promising to further speed up the efficiency of training large models.</p>
+<p>These specialized chips, broadly known as <strong>Application Specific Integrated Circuits</strong>, build assumption about how deep learning models work directly into hardware, offering the ability to drastically accelerate training.</p>
+<p>The question is, will other companies be able to compete in this space, or will NVIDIA maintain it's domination of the AI training market (most likely).</p>
+<p><br /></p>
+<h2 id="en-16-compute-efficiency">1.6. Compute Efficiency</h2>
+<p><img alt="constraint-6-compute-efficiency" src="images/readme/constraint-6-compute-efficiency.png" /></p>
+<p>While the power of compute increases, making effective use of this compute is not a guarantee. Using compute efficiently is a software problem that takes active effort and optimization.</p>
+<p>Innovations like <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttention</a>, which drastically accelerated the speed of Transformers through an optimization in how attention access memory, are a reminder that compute optimizations are another lever to increase the efficiency of training and scale up models.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #6: The software implementations for training constrain the efficiency of compute utilization.</strong></p></div>
+<h3>Breakthrough #1: CUDA</h3>
+<p>Initially, GPUs were challenging to work with as they depended on a completely new programming paradigm.</p>
+<p>The introduction of <a href="https://en.wikipedia.org/wiki/CUDA" target="_blank" rel="noopener">CUDA</a> as a GPU programming paradigm familiar to C programmers made writing GPU code far more approachable.</p>
+<p>This language enabled <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> to manually implement their own kernels to speed up the convolution operation on GPUs, unlocking a new level of parallelization for training CNNs.</p>
+<h3>Breakthrough #2: Kernel Libraries</h3>
+<p>People rarely have to write low-level kernels anymore since popular libraries like <a href="https://pytorch.org/" target="_blank" rel="noopener">PyTorch</a> and <a href="https://github.com/google/jax" target="_blank" rel="noopener">JAX</a> have already written the kernel code for the most popular kernels, making it easy for modern deep learning engineers to use GPUs without needing to dip into low-level code.</p>
+<h3>Continuous Improvement</h3>
+<p>Despite the fact that GPU kernels are now largely written, there are likely still plenty of opportunities for improving the compute efficiency of model implementations - notably, the introduction of <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttenion</a> demonstrated how big of a difference these changes could make in terms of training efficiency.</p>
+<p><br /></p>
+<h2 id="en-17-energy">1.7. Energy</h2>
+<p><img alt="constraint-7-energy" src="images/readme/constraint-7-energy.png" /></p>
+<p><strong>Finally, even if the compute supply chains are capable of supporting all demand, and we have infinite resources to purchase compute, there is still a constraint on compute: energy</strong></p>
+<p>In practice, large training runs need to be run on physically clustered compute in large data centers since the devices need to communicate with each other.</p>
+<p>As the amount of devices in large training runs grows, datacenters will need to be able to support the energy needs of these devices.</p>
+<p>This may actually become a meaningful constraint, as <a href="https://www.youtube.com/watch?v=i-o5YbNfmh0" target="_blank" rel="noopener">Zuck discussed in this clip on the Dwarkesh podcast</a>.</p>
+<p>Specifically, energy grids are limited to allowing a certain amount of energy being drawn from them in a location, meaning there's a cap to how large data-centers can become before they run into problems that require energy permitting and dipping into much slower government regulated processes.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p><strong>Constraint #7: The energy available to draw from the grid in a single location constrains the amount of compute that can be used for a training run.</strong></p></div>
+<p>As many companies plan to build large data-centers for AI training, we'll see how the energy constraint plays out - notably, <a href="https://www.reuters.com/technology/microsoft-openai-planning-100-billion-data-center-project-information-reports-2024-03-29/" target="_blank" rel="noopener">Microsoft and OpenAI are rumored to be launching a $100B data-center project</a>.</p>
+<p><br /></p>
+<h2 id="en-18-constraints-leverage">1.8. Constraints &amp; Leverage</h2>
+<p>Having covered each constraint individually, we can now put them all into perspective in relation to the broader arrow of progress in deep learning.</p>
+<p><strong>A helpful way to think about the 7 constraints is in terms of <em>hard constraints</em> and <em>leverage</em>.</strong></p>
+<p>The hard constraints are <strong>data</strong>, <strong>compute</strong>, and <strong>energy</strong> - these are rate-limited by slow processes - data currently being limited by the scaling growth of the internet and other data collection methods, compute being limited by individual company resources and supply chains, and energy constraints eventually being rate-limited by regulation.</p>
+<p>Meanwhile, <strong>parameters</strong>, <strong>optimization &amp; regularization</strong>, <strong>architecture</strong>, and <strong>compute efficiency</strong> can be thought of as forms of <strong>leverage</strong> on the hard constraints - they are all easy to vary and can be optimized to maximize a models intelligence given a fixed set of data, compute, and energy.</p>
+<p><strong>Maximizing leverage constraints are important for individual training runs, but improving the hard constraints is what really pushed forward the increasing base intelligence of models now.</strong></p>
+<p>This is again indicative of the scaling laws - our models have not shown signs of coming close to fully modeling the information in current internet-scale datasets, so we continue to scale up models by increasing <em>compute</em> and <em>parameters</em></p>
+<p><br /></p>
+<h1 id="en-2-narratives">2. Narratives</h1>
+<p>We can look back at this history of progress in deep learning through the lens of constraints, and see a few key milestones that stand out above the rest which have completely shifted narratives around deep learning.</p>
+<p>Since narratives are a powerful tool for allocating capital and talent toward problems<sup class="fnref" id="en-fnref-18"><a href="#en-fn-18">18</a></sup>, these narrative shifts alone have had a significant impact on deep learning progress.</p>
+<h3>Narrative #1: Deep Learning Works</h3>
+<p>The first major narrative shift in deep learning occured after the release of <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> in 2012.</p>
+<p>Prior to this paper, deep learning was considered inferior to traditional ML, as it consistently lost to manual feature engineering approaches in image classification and other challenges.</p>
+<p>The success of AlexNet brought down the top-5 error rate on the ImageNet challenge from 25.8% to 16.4%, blowing the previous state-of-the-art out of the water.</p>
+<p>This directly enabled further innovations like <a href="https://arxiv.org/abs/1409.4842" target="_blank" rel="noopener">GoogLeNet</a> and <a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">ResNet</a>, but more importantly, it shifted attention back on deep learning and created new interest in the field.</p>
+<p>The narrative shift that occured as a result of this work was from one of skepticism about the utility of deep learning to belief that it was a viable, and even superior approach to traditional machine learning.</p>
+<p>This narrative shift was essential to get us to the point that we're at today, and it seems that Ilya Sutskever (who co-authored AlexNet) realized how scaling laws would playout long before it reached consensus, as <a href="https://www.youtube.com/watch?v=n4IQOBka8bc" target="_blank" rel="noopener">discussed in this interview with Geoffrey Hinton</a>.</p>
+<h3>Narrative #2: Internet Scale Data</h3>
+<p>The <a href="04-transformers/01-transformer/02-transformer.ipynb"><em>Attention Is All You Need</em></a> paper created a massively parallelizable architecture that enabled training on internet scale datasets.</p>
+<p>The introduction of the Transformer alone was not what created the largest narrative shifts though.</p>
+<p>Arguably, it was the introduction of <a href="04-transformers/02-bert/03-bert.ipynb">BERT</a> that really showed how transformers could take advantage of massive datasets scraped from the internet via pre-training and fine-tuning, which kicked off the modern trends in AI focusing on achieving general intelligence.</p>
+<p>Because of it's transfer learning approach, BERT achieved state-of-the-art results on many NLP tasks withou training on them explicitly, showing one of the first indications of some form of <em>generalized</em> intelligence.</p>
+<p>The shock caused by BERT is evident in the <a href="https://x.com/TechEmails/status/1756765277478621620" target="_blank" rel="noopener">Google executive statement</a> claiming that BERT will replace all the 20 years of progress on the search product.</p>
+<h3>Narrative #3: Scaling Laws</h3>
+<p>The arrow of progress defined by the improvements from <a class="paper-inline" href="04-transformers/04-gpt/01-gpt-2.pdf" data-src="04-transformers/04-gpt/01-gpt-2.pdf">GPT-2</a> to <a class="paper-inline" href="04-transformers/04-gpt/02-gpt-3.pdf" data-src="04-transformers/04-gpt/02-gpt-3.pdf">GPT-3</a> onwards created the scaling laws narrative that dominates the current public sentiment.</p>
+<p>Importantly, OpenAI took a bet on the scaling laws early on, well before they were widely recognized as being valid<sup class="fnref" id="en-fnref-19"><a href="#en-fn-19">19</a></sup>. A few years ago, most people thought the scaling laws were naive.</p>
+<p>Now, they look clear in hindisght because of the series of bets OpenAI took to validate these laws, with GPT-2 and GPT-3 further validating their hypothesis.</p>
+<p><strong>Extrapolating out the progression of scaling laws correctly is challenging</strong> - as <a href="https://www.youtube.com/watch?v=i-o5YbNfmh0" target="_blank" rel="noopener">Zuck points out in this clip</a>, trends like these rarely continue until we reach the goal - we usually run into bottlenecks and then have to readjust strategy.</p>
+<p>In this context, the question is how far the empirical distribution of the internet dataset will take. Framed differently - how close is the empirical distribution of the internet to the true distribution of the model of reality?</p>
+<p>This will determine when we hit a carrying capacity on how much better our models can get by scaling parameters to train on the internet.</p>
+<p><strong>This narrative is also a good indicator of how impactful narratives are in fundraising.</strong></p>
+<p>The AGI narrative may be the most powerful narrative in history since it can claim that "everything else economically valuable will be solved by this problem."</p>
+<p>Clearly, this was used effectively with the <a href="https://www.wsj.com/tech/ai/sam-altman-seeks-trillions-of-dollars-to-reshape-business-of-chips-and-ai-89ab3db0" target="_blank" rel="noopener">rumored $7T OpenAI fundraising attempt</a> (which was of course just a rumor, but an indication of the power of the AGI narrative, since people believed it was a possibility).</p>
+<h1 id="en-3-inspiration">3. Inspiration</h1>
+<p>Where do the ideas that have led to breakthroughs in deep learning come from?</p>
+<p>When we look at the history of progress, we can see several common sources of inspiration that appear frequently.</p>
+<h3>Neuroscience</h3>
+<p>The most apparent source of direct inspiration for many advancements in deep learning is neuroscience.</p>
+<p>The <a class="paper-inline" href="01-deep-neural-networks/02-cnn/01-cnn.pdf" data-src="01-deep-neural-networks/02-cnn/01-cnn.pdf">CNN</a> is almost directly inspired by the visual system in the brain, and it led to significant advancements in deep learning.</p>
+<p>Similarly, the effectiveness of <a href="02-optimization-and-regularization/02-relu/">ReLU</a> is explained in terms of the energy efficiency of sparse representations for concepts in the brain.</p>
+<p>Other systems, like the <a href="03-sequence-modeling/02-lstm/02-lstm.ipynb">LSTM</a> and <a href="03-sequence-modeling/06-attention/02-attention.ipynb">Attention</a> mechanisms appear to draw from neuroscientific concepts (memory and attention) on a surface level, although in reality, their implementations are more motivated by the math of neural networks and engineering to specific problems rather than they are directly modeled after the brain.</p>
+<p>For example, the LSTM design is perfectly engineering to address the vanishing &amp; exploding gradients problem in RNNs, and it happens that a long-term memory based system is an effective way to fix this problem.</p>
+<p>This pattern suggests that rather than taking direct inspiration from neuroscience, <strong>deep learning may have converged on similar approaches to how nature has built intelligence in the brain, partly through first principles.</strong></p>
+<p>This is a nice ex-post rationalization, but may overly construct a clean narrative that doesn't actually reflect the situation.</p>
+<p>Additionally, early papers seem to intentionally feel pressure to fit ideas into neuroscientific and biological justifications, even where there may not have been any.</p>
+<p><a href="02-optimization-and-regularization/04-dropout/02-dropout.ipynb">Dropout</a> struck me as the most blatant example of this, as they explain "one possible motivation" for dropout coming from animal sexual behavior, despite their prior explanation in the paper of dropout following from a rather logical line of thinking around regularization.</p>
+<p>This seems to an attempt to make the architecture appear to correspond with biology after it was designed, rather than it actually serving as a source for inspiration (of course, I could be wrong about this).</p>
+<h3>Linear Algebra &amp; Calculus</h3>
+<p>Most notably, <a href="01-deep-neural-networks/01-dnn/02-dnn.ipynb">backpropagation</a> and <a href="04-transformers/05-lora">LoRA</a> are directly inspired by the math behind neural networks.</p>
+<p>LoRA (low-rank adaptation) is directly a manipulation on how models are trained by taking advantage of a feature of linear-algebra (decomposing weight matrices into lower dimensionality matrices with fewer trainable parameters).</p>
+<p>Similarly, advancements like <a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">Residuals</a> were directly motivated by the nature of gradient flows within neural networks.</p>
+<h3>Physics &amp; Information Theory</h3>
+<p>Notably, <a href="05-image-generation/02-vae/04-vae.ipynb">VAEs</a> and <a href="05-image-generation/03-diffusion/05-diffusion.ipynb">Diffusion</a> models take inspiration from thermodynamics - specifically Langevin dynamics, as well as probability and information theory.</p>
+<p>These systems involve noisy sampling, and these models turn to approaches used in similarly noisy systems in the real world for inspiration</p>
+<h3>Engineering</h3>
+<p>In practice, most of the innovations in deep learning are actually more motivated by engineering problems in neural network design, and bear only surface-level resemblance to the apparent fields of inspiration.</p>
+<h1 id="en-4-intelligence">4. Intelligence</h1>
+<p>What can this progression of progress in deep learning tell us about our own intelligence?</p>
+<p>I'll try to be purely empirical here, since it's easy to dip into unbased philosophizing with this topic given it's subjective nature.</p>
+<p>As we've disucssed, one way way to view intelligence (motivated by the <a href="https://www.nature.com/articles/nrn2787" target="_blank" rel="noopener">Free Energy Principle</a>) is as a measure of our ability to model complex distributions that describe reality, and then run active inference on these models to accomplish things in the world<sup class="fnref" id="en-fnref-20"><a href="#en-fn-20">20</a></sup>.</p>
+<p>It seems that the combination of data about reality (dataset vs. our senses), compute (transistors vs. neurons), and energy (electricity vs. food) along with scale (parameters vs. connections), and of course, an effective learning algorithm, yields systems that appear intelligent.</p>
+<p>Additionally, the efficacy of various inductive biases offered by different architectes may indicate something inherent about the structure of the information they're trying to model.</p>
+<p>For example, the effectiveness of the attention mechanism raises the question of why this inductive bias alone appears to be so effective at modeling data.</p>
+<p>If intelligence is really just a function of data, compute, energy, and training, then it seems inevitable now that digital intelligence will soon surpass us.</p>
+<h1 id="en-5-future">5. Future</h1>
+<p>We've now reframed the history of progress as the series of advancements that have continually raised the ceiling on the constraints governing digital intelligence.</p>
+<p>Everything in the past that has contributed to progress has been determined by the constraints discussed above.</p>
+<p>Importantly, nothing about this changes in the future - <strong>these same 7 constraints will always determine where we're headed, and how close we are to AGI.<sup class="fnref" id="en-fnref-21"><a href="#en-fn-21">21</a></sup></strong></p>
+<p>At this point, we've solved the <em>theoretical problem</em> of AGI, in the sense that we know exactly what would get us to AGI<sup class="fnref" id="en-fnref-22"><a href="#en-fn-22">22</a></sup>.</p>
+<p>This was not obvious until the past decade, where we've seen the power of how far deep learning can go.</p>
+<p>The question is now whether we will solve the <em>engineering</em> problem of AGI. Will we be able to keep pushing on all the constraints to keep improving digital intelligence?</p>
+<p>Although scaling laws are currently at play and the current path forward is to acquire larger amounts of compute to train larger models, the efficacy of this approach will hit a limit in the future (it's difficult to know when).</p>
+<p>It's possible that we may hit a bottleneck in how good models can get based on the quality of the empirical distribution of the internet, in which case we'll have to seek other sources of data.</p>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p><p>It's critical to remember that the core principle of progress in deep learning is that pushing on the 7 constraints will lead to increasingly intelligence systems.</p>
+<p>Though the scaling laws indicate that the current limiting constraints are compute and parameters, these may shift to data and energy over time, which will bring new challenges.</p></div>
+<p><br /></p>
+<h1 id="en-resources">Resources</h1>
+<h2 id="en-topics">Topics</h2>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p><p>Each topic highlighted in this repository is covered in a folder linked below.</p>
+<p>In each folder, you'll find a copy of the critical papers related to the topic (<code>.pdf</code> files), along with my own breakdown of intuitions, math, and my implementation when relevant (all in the <code>.ipynb</code> file).</p></div>
+<p><strong>1. Deep Neural Networks</strong></p>
+<ul>
+<li><a href="01-deep-neural-networks/01-dnn/">1.1. DNN</a></li>
+<li><a href="01-deep-neural-networks/02-cnn/">1.2. CNN</a></li>
+<li><a href="01-deep-neural-networks/03-alex-net/">1.3. AlexNet</a></li>
+<li><a href="01-deep-neural-networks/04-u-net/">1.4. UNet</a></li>
+</ul>
+<p><strong>2. Optimization &amp; Regularization</strong></p>
+<ul>
+<li><a href="02-optimization-and-regularization/01-weight-decay/">2.1. Weight Decay</a></li>
+<li><a href="02-optimization-and-regularization/02-relu/">2.2. ReLU</a></li>
+<li><a href="02-optimization-and-regularization/03-residuals/">2.3. Residuals</a></li>
+<li><a href="02-optimization-and-regularization/04-dropout/">2.4. Dropout</a></li>
+<li><a href="02-optimization-and-regularization/05-batch-norm/">2.5. Batch Normalization</a></li>
+<li><a href="02-optimization-and-regularization/06-layer-norm/">2.6. Layer Normalization</a></li>
+<li><a href="02-optimization-and-regularization/07-gelu/">2.7. GELU</a></li>
+<li><a href="02-optimization-and-regularization/08-adam/">2.8. Adam</a></li>
+</ul>
+<p><strong>3. Sequence Modeling</strong></p>
+<ul>
+<li><a href="03-sequence-modeling/01-rnn/">3.1. RNN</a></li>
+<li><a href="03-sequence-modeling/02-lstm/">3.2. LSTM</a></li>
+<li><a href="03-sequence-modeling/03-learning-to-forget/">3.3. Learning to Forget</a></li>
+<li><a href="03-sequence-modeling/04-word2vec/">3.4. Word2Vec &amp; Phrase2Vec</a></li>
+<li><a href="03-sequence-modeling/05-seq2seq/">3.5. Seq2Seq</a></li>
+<li><a href="03-sequence-modeling/06-attention/">3.6. Attention</a></li>
+<li><a href="03-sequence-modeling/07-mixture-of-experts/">3.7. Mixture of Experts</a></li>
+</ul>
+<p><strong>4. Transformers</strong></p>
+<ul>
+<li><a href="04-transformers/01-transformer/">4.1. Transformer</a></li>
+<li><a href="04-transformers/02-bert/">4.2. BERT</a></li>
+<li><a href="04-transformers/03-t5">4.3. T5</a></li>
+<li><a href="04-transformers/04-gpt">4.4. GPT-2 &amp; GPT-3</a></li>
+<li><a href="04-transformers/05-lora">4.5. LoRA</a></li>
+<li><a href="04-transformers/06-rlhf">4.8. RLHF &amp; InstructGPT</a></li>
+<li><a href="04-transformers/07-vision-transformer">4.9. Vision Transformer</a></li>
+</ul>
+<p><strong>5. Image Generation</strong></p>
+<ul>
+<li><a href="05-image-generation/01-gan/">5.1. GANs</a></li>
+<li><a href="05-image-generation/02-vae/">5.2. VAEs</a></li>
+<li><a href="05-image-generation/03-diffusion/">5.3. Diffusion</a></li>
+<li><a href="05-image-generation/04-clip/">5.4. CLIP</a></li>
+<li><a href="05-image-generation/05-dall-e/">5.5. DALL E &amp; DALL E 2</a></li>
+</ul>
+<p><br /></p>
+<h2 id="en-implementations">Implementations</h2>
+<p>I've provided my minimal implementations for many of the core topics in this repository in the <code>.ipynb</code> files for each topic.</p>
+<p>Generally, you can find good implementations of most papers online, which means the challenge isn't figuring out reimplementation. I've included these to collect them in one place for convenience, and also to highlight simple implementations that demonstrate each concept.</p>
+<ul>
+<li><a href="01-deep-neural-networks/01-dnn/02-dnn.ipynb">DNN</a></li>
+<li><a href="01-deep-neural-networks/02-cnn/03-cnn.ipynb">CNN</a></li>
+<li><a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a></li>
+<li><a href="04-transformers/05-lora/02-lora.ipynb">LoRA</a></li>
+<li><a href="04-transformers/07-vision-transformer/02-vision-transformer.ipynb">Vision Transformer</a></li>
+<li><a href="05-image-generation/01-gan/02-gan.ipynb">GAN</a></li>
+<li><a href="05-image-generation/02-vae/04-vae.ipynb">VAE</a></li>
+<li><a href="05-image-generation/03-diffusion/05-diffusion.ipynb">Diffusion</a></li>
+</ul>
+<p><br /></p>
+<h2 id="en-papers-list">Papers</h2>
+<p><strong>Deep Neural Networks</strong></p>
+<ul>
+<li><strong>DNN</strong> - Learning Internal Representations by Error Propagation (1987), D. E. Rumelhart et al. <a href="https://stanford.edu/~jlmcc/papers/PDP/Volume%201/Chap8_PDP86.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>CNN</strong> - Backpropagation Applied to Handwritten Zip Code Recognition (1989), Y. Lecun et al. <a href="http://yann.lecun.com/exdb/publis/pdf/lecun-89e.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LeNet</strong> - Gradient-Based Learning Applied to Document Recognition (1998), Y. Lecun et al. <a href="http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>AlexNet</strong> - ImageNet Classification with Deep Convolutional Networks (2012), A. Krizhevsky et al. <a href="https://papers.nips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>U-Net</strong> - U-Net: Convolutional Networks for Biomedical Image Segmentation (2015), O. Ronneberger et al. <a href="https://arxiv.org/abs/1505.04597" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>Optimization &amp; Regularization</strong></p>
+<ul>
+<li><strong>Weight Decay</strong> - A Simple Weight Decay Can Improve Generalization (1991), A. Krogh and J. Hertz <a href="https://proceedings.neurips.cc/paper/1991/file/8eefcfdf5990e441f0fb6f3fad709e21-Paper.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>ReLU</strong> - Deep Sparse Rectified Neural Networks (2011), X. Glorot et al. <a href="https://www.researchgate.net/publication/215616967_Deep_Sparse_Rectifier_Neural_Networks" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Residuals</strong> - Deep Residual Learning for Image Recognition (2015), K. He et al. <a href="https://arxiv.org/pdf/1512.03385" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Dropout</strong> - Dropout: A Simple Way to Prevent Neural Networks from Overfitting (2014), N. Strivastava et al. <a href="https://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>BatchNorm</strong> - Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift (2015), S. Ioffe and C. Szegedy <a href="https://arxiv.org/pdf/1502.03167" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LayerNorm</strong> - Layer Normalization (2016), J. Lei Ba et al. <a href="https://arxiv.org/pdf/1607.06450" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>GELU</strong> - Gaussian Error Linear Units (GELUs) (2016), D. Hendrycks and K. Gimpel <a href="https://arxiv.org/pdf/1606.08415" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Adam</strong> - Adam: A Method for Stochastic Optimization (2014), D. P. Kingma and J. Ba <a href="https://arxiv.org/pdf/1412.6980" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>Sequence Modeling</strong></p>
+<ul>
+<li><strong>RNN</strong> - A Learning Algorithm for Continually Running Fully Recurrent Neural Networks (1989), R. J. Williams <a href="https://gwern.net/doc/ai/nn/rnn/1989-williams-2.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LSTM</strong> - Long-Short Term Memory (1997), S. Hochreiter and J. Schmidhuber <a href="https://www.bioinf.jku.at/publications/older/2604.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Learning to Forget</strong> - Learning to Forget: Continual Prediction with LSTM (2000), F. A. Gers et al. <a href="https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=e10f98b86797ebf6c8caea6f54cacbc5a50e8b34" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Word2Vec</strong> - Efficient Estimation of Word Representations in Vector Space (2013), T. Mikolov et al. <a href="https://arxiv.org/pdf/1301.3781" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Phrase2Vec</strong> - Distributed Representations of Words and Phrases and their Compositionality (2013), T. Mikolov et al. <a href="https://arxiv.org/pdf/1310.4546" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Encoder-Decoder</strong> - Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation (2014), K. Cho et al. <a href="https://arxiv.org/pdf/1406.1078" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Seq2Seq</strong> - Sequence to Sequence Learning with Neural Networks (2014), I. Sutskever et al. <a href="https://arxiv.org/pdf/1409.3215" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Attention</strong> - Neural Machine Translation by Jointly Learning to Align and Translate (2014), D. Bahdanau et al. <a href="https://arxiv.org/pdf/1409.0473" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Mixture of Experts</strong> - Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer (2017), N. Shazeer et al. <a href="https://arxiv.org/pdf/1701.06538" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>Transformers</strong></p>
+<ul>
+<li><strong>Transformer</strong> - Attention Is All You Need (2017), A. Vaswani et al. <a href="https://arxiv.org/pdf/1706.03762" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>BERT</strong> - BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding (2018), J. Devlin et al. <a href="https://arxiv.org/pdf/1810.04805" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>RoBERTa</strong> - RoBERTa: A Robustly Optimized BERT Pretraining Approach (2019), Y. Liu et al. <a href="https://arxiv.org/pdf/1907.11692" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>T5</strong> - Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (2019), C. Raffel et al. <a href="https://arxiv.org/pdf/1910.10683" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>GPT-2</strong> - Language Models are Unsupervised Multitask Learners (2018), A. Radford et al. <a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>GPT-3</strong> - Language Models are Few-Shot Learners (2020) T. B. Brown et al. <a href="https://arxiv.org/pdf/2005.14165" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LoRA -</strong> LoRA: Low-Rank Adaptation of Large Language Models (2021), E. J. Hu et al. <a href="https://arxiv.org/pdf/2106.09685" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>RLHF</strong> - Fine-Tuning Language Models From Human Preferences (2019), D. Ziegler et al. <a href="https://arxiv.org/pdf/1909.08593" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>PPO</strong> - Proximal Policy Optimization Algorithms (2017), J. Schulman et al. <a href="https://arxiv.org/pdf/1707.06347" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>InstructGPT</strong> - Training language models to follow instructions with human feedback (2022), L. Ouyang et al. <a href="https://arxiv.org/pdf/2203.02155" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Helpful &amp; Harmless</strong> - Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback (2022), Y. Bai et al. <a href="https://arxiv.org/pdf/2204.05862" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Vision Transformer</strong> - An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (2020), A. Dosovitskiy et al. <a href="https://arxiv.org/pdf/2010.11929" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>Generative Models</strong></p>
+<ul>
+<li><strong>GAN</strong> - Generative Adversarial Networks (2014), I. J. Goodfellow et al. <a href="https://arxiv.org/pdf/1406.2661" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>VAE</strong> - Auto-Encoding Variational Bayes (2013), D. Kingma and M. Welling <a href="https://arxiv.org/pdf/1312.6114" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>VQ VAE</strong> - Neural Discrete Representation Learning (2017), A. Oord et al. <a href="https://arxiv.org/pdf/1711.00937" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>VQ VAE 2</strong> - Generating Diverse High-Fidelity Images with VQ-VAE-2 (2019), A. Razavi et al. <a href="https://arxiv.org/pdf/1906.00446" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Diffusion</strong> - Deep Unsupervised Learning using Nonequilibrium Thermodynamics (2015), J. Sohl-Dickstein et al. <a href="https://arxiv.org/pdf/1503.03585" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Denoising Diffusion</strong> - Denoising Diffusion Probabilistic Models (2020), J. Ho. et al. <a href="https://arxiv.org/pdf/2006.11239" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Denoising Diffusion 2</strong> - Improved Denoising Diffusion Probabilistic Models (2021), A. Nichol and P. Dhariwal <a href="https://arxiv.org/pdf/2102.09672" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Diffusion Beats GANs</strong> - Diffusion Models Beat GANs on Image Synthesis, P. Dhariwal and A. Nichol <a href="https://arxiv.org/pdf/2105.05233" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>CLIP</strong> - Learning Transferable Visual Models From Natural Language Supervision (2021), A. Radford et al. <a href="https://arxiv.org/pdf/2103.00020" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>DALL E</strong> - Zero-Shot Text-to-Image Generation (2021), A. Ramesh et al. <a href="https://arxiv.org/pdf/2102.12092" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>DALL E 2</strong> - Hierarchical Text-Conditional Image Generation with CLIP Latents (2022), A. Ramesh et al. <a href="https://arxiv.org/pdf/2204.06125" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<section class="footnotes"><ol>
+<li id="en-fn-1"><p>Everyone has different definitions of intelligence, all of which are useful in different contexts, and none of which capture the full picture of what this word means. People may disagree with the specifics of this definition. I've chosen this one for the sake of simplicity to clearly frame what we're trying to achieve with deep learning from an economic perspective - I'm less concerned with it's philosophical implications here. <a href="#en-fnref-1" class="fn-back">↩</a></p></li>
+<li id="en-fn-2"><p>Karl Friston's <a href="https://www.nature.com/articles/nrn2787" target="_blank" rel="noopener">Free Energy Principle</a> suggests that this definition of intelligence is also valid in the context of the brain (beware, the paper is explained with unnecessary mathematical complexity, but the core concept it describes is simple). Notably, intelligence systems create models of the world and then use those models to perform <em>active inference</em> to modify their environments. <a href="#en-fnref-2" class="fn-back">↩</a></p></li>
+<li id="en-fn-3"><p>This idea may seem unintuitive at first. But it's actually saying something very simple: (1) reality has a set of rules that govern what happens (2) we can model these rules by assigning probabilities to what's likely to happen, given what has already happened (3) thus, these models are probability distributions. Again, the <a href="https://www.nature.com/articles/nrn2787" target="_blank" rel="noopener">Free Energy Principle</a> supports this view of modeling reality. <a href="#en-fnref-3" class="fn-back">↩</a></p></li>
+<li id="en-fn-4"><p>Assuming the true distribution we're trying to model is sufficiently complex to the point where including all information about it in the dataset would be intractable. This is almost always the case in deep learning. <a href="#en-fnref-4" class="fn-back">↩</a></p></li>
+<li id="en-fn-5"><p>Assuming the model perfectly represents all information that exists within the dataset, which rarely happens. <a href="#en-fnref-5" class="fn-back">↩</a></p></li>
+<li id="en-fn-6"><p>This is analogous to how adding more terms to a Taylor series yields a function closer to the original. Approximations improve with more information about the true function. <a href="#en-fnref-6" class="fn-back">↩</a></p></li>
+<li id="en-fn-7"><p>In fact, you can think of examples where more data makes no difference. For example adding the same image to a dataset (or two images similar to each other) doesn't improve the quality of the model created. It's because these new data points don't add much new information about the true distribution. <a href="#en-fnref-7" class="fn-back">↩</a></p></li>
+<li id="en-fn-8"><p>There was not powerful enough compute or good enough architectures to process the scale of internet datasets effectively for a long time. <a href="#en-fnref-8" class="fn-back">↩</a></p></li>
+<li id="en-fn-9"><p>This may not actually be sufficient to keep increasing the quality of models, as a recent <a href="https://arxiv.org/abs/2404.04125" target="_blank" rel="noopener">analysis of zero-shot learning</a> shows that large language models ability to perform tasks increases logartihmically with the amount of relevant data in the dataset. <a href="#en-fnref-9" class="fn-back">↩</a></p></li>
+<li id="en-fn-10"><p>The internet is a lossy compression of the entirety of human knowledge, with lot's of noise (complex and contrasting intentions behind different posts). Additionally, human knowledge itself is a very lossy (and partially inaccurate) compression of the laws of reality. <a href="#en-fnref-10" class="fn-back">↩</a></p></li>
+<li id="en-fn-11"><p>Although, AlexNet was the result of a large number of innovations that combined to make it so effective - the increase in network depth was complemented with a use of effective optimization &amp; regularization methods and the use of GPUs for training which enabled this increase in size. <a href="#en-fnref-11" class="fn-back">↩</a></p></li>
+<li id="en-fn-12"><p>Understanding this section relies on a basic understanding of the fundamentals of the backpropagation algorith. <a href="https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi" target="_blank" rel="noopener">3blue1brown's neural network series</a> is an intuitive and interesting introduction for anyone who wants to learn. <a href="#en-fnref-12" class="fn-back">↩</a></p></li>
+<li id="en-fn-13"><p>This effect forces individual neurons to learn general representations useful in collaboration with a variety of other neurons, rather than co-adapting with neighboring neurons, which allows large groups of neurons to fit to noise. <a href="#en-fnref-13" class="fn-back">↩</a></p></li>
+<li id="en-fn-14"><p>Specifically in parameter spaces with large variance in the gradients, a certain step-size may cause over-adjustments in certain parts of the landscape, and result in painfully slow changes in other cases. <a href="#en-fnref-14" class="fn-back">↩</a></p></li>
+<li id="en-fn-15"><p>This idea is explored in the original <a class="paper-inline" href="01-deep-neural-networks/01-dnn/01-dnn.pdf" data-src="01-deep-neural-networks/01-dnn/01-dnn.pdf">backpropagation paper</a>. <a href="#en-fnref-15" class="fn-back">↩</a></p></li>
+<li id="en-fn-16"><p>For example, image classification, where individual pixel values are noisy and subject to a variety of transformations. <a href="#en-fnref-16" class="fn-back">↩</a></p></li>
+<li id="en-fn-17"><p>There are also many engineering challenges with training on increasingly large clusters of devices like GPUs that need to be able to communicate with each other. <a href="#en-fnref-17" class="fn-back">↩</a></p></li>
+<li id="en-fn-18"><p>For those curious, <a href="https://kwokchain.com/2021/09/29/narrative-distillation-1/" target="_blank" rel="noopener">Kevin Kwok's essay on Narrative Distillation</a> an excellent exploration of the power of narratives in capital and resource allocation. <a href="#en-fnref-18" class="fn-back">↩</a></p></li>
+<li id="en-fn-19"><p>In Theil terms, you could frame this as OpenAI's "secret" or something they believe that others don't. <a href="#en-fnref-19" class="fn-back">↩</a></p></li>
+<li id="en-fn-20"><p>This view of intelligence also paints the framework of thinking in the WaitButWhy post <a href="https://waitbutwhy.com/2015/11/the-cook-and-the-chef-musks-secret-sauce.html" target="_blank" rel="noopener">The Cook and the Chef: Musk's Secret Suace</a> particularly well <a href="#en-fnref-20" class="fn-back">↩</a></p></li>
+<li id="en-fn-21"><p>This is not saying that scaling laws will get us to AGI, but that constantly pushing the constraints will get us to AGI. We may run into bottlenecks that render the scaling laws obselete at some point. <a href="#en-fnref-21" class="fn-back">↩</a></p></li>
+<li id="en-fn-22"><p>Assuming you believe that the current systems exhibit intelligent behavior, which some people still disagree with. <a href="#en-fnref-22" class="fn-back">↩</a></p></li>
+</ol></section>
+</article>
+<article class="markdown-body lang-zh">
+<h1 id="zh-deep-learning">深度学习</h1>
+<p class="subtitle"><em>一部从第一性原理出发的深度学习史——将整部历史重新理解为：不断抬高那七个限制数字智能容量的约束之上限的一系列突破。</em></p>
+<p>一次对深度学习整个发展史的深度剖析，重点呈现那一系列将我们从简单的前馈网络一路带到 GPT-4o 的创新。</p>
+<p>对于每一个关键里程碑，我在本仓库中都收录了相关的核心论文，并附上我的笔记、我对重要直觉与数学的讲解，以及在相关之处用 pytorch 写成的玩具实现。</p>
+<p>本页其余部分是我的梳理：从这段历史中我们能学到的一切，以及它对深度学习未来的启示——灵感来自 Will 与 Ariel Durant 的 <a href="https://www.amazon.com/Lessons-History-Will-Durant/dp/143914995X" target="_blank" rel="noopener"><em>《历史的教训》(The Lessons of History)</em></a>。</p>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>重点</p><p><strong>本项目的设计意图是：每个人只需阅读本页其余部分的概览，就能获得其中的大部分价值。</strong></p>
+<p>之后，对每项创新的技术细节感兴趣的人，可以通过<a href="#zh-resources">资源</a>一节中的链接探索本仓库的其余部分。</p></div>
+<h2 id="zh-table-of-contents">目录</h2>
+<ul>
+<li><a href="#zh-overview">概述</a><ul>
+<li><a href="#zh-1-constraints">1. 约束</a><ul>
+<li><a href="#zh-11-data">1.1. 数据</a></li>
+<li><a href="#zh-12-parameters">1.2. 参数</a></li>
+<li><a href="#zh-13-optimization-regularization">1.3. 优化与正则化</a></li>
+<li><a href="#zh-14-architecture">1.4. 架构</a></li>
+<li><a href="#zh-15-compute">1.5. 算力</a></li>
+<li><a href="#zh-16-compute-efficiency">1.6. 算力效率</a></li>
+<li><a href="#zh-17-energy">1.7. 能源</a></li>
+<li><a href="#zh-18-constraints-leverage">1.8. 约束与杠杆</a></li>
+</ul>
+</li>
+<li><a href="#zh-2-narratives">2. 叙事</a></li>
+<li><a href="#zh-3-inspiration">3. 灵感来源</a></li>
+<li><a href="#zh-4-intelligence">4. 智能</a></li>
+<li><a href="#zh-5-future">5. 未来</a></li>
+</ul>
+</li>
+<li><a href="#zh-resources">资源</a><ul>
+<li><a href="#zh-topics">主题</a></li>
+<li><a href="#zh-implementations">实现</a></li>
+<li><a href="#zh-papers-list">论文</a></li>
+</ul>
+</li>
+</ul>
+<p><br /></p>
+<h1 id="zh-overview">概述</h1>
+<p>我这次深度剖析中最有意思的部分，来自于注意到贯穿所有关键进展的一个清晰趋势，它彻底重构了我对深度学习的理解：</p>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>重点</p><p><strong>有 7 个简单的约束限制着数字智能的容量：</strong></p>
+<ol>
+<li>数据</li>
+<li>参数</li>
+<li>优化与正则化</li>
+<li>架构</li>
+<li>算力</li>
+<li>算力效率</li>
+<li>能源</li>
+</ol>
+<p><strong>整部深度学习史都可以看作是一系列逐步抬高这些约束上限的进展</strong>，正是它们使我们得以构建出越来越智能的系统。</p></div>
+<p>若不先理解我们是如何走到今天的，就无法理解我们将去向何方；而若不理解这些始终支配着进步速度的约束，就无法理解我们是如何走到今天的。</p>
+<p>通过理解它们，我们还可以探讨几个相关问题：</p>
+<ul>
+<li>深度学习中的进步是如何取得的？</li>
+<li>推动深度学习进步的想法从何而来？</li>
+<li>我们关于数字智能的叙事随时间发生了怎样的变化？</li>
+<li>深度学习对我们理解自身的智能有何启示？</li>
+<li>深度学习的未来将走向何方？</li>
+</ul>
+<p>那么，让我们从第一性原理出发来理解这些约束。</p>
+<p><br /></p>
+<h1 id="zh-1-constraints">1. 约束</h1>
+<p>我们可以将智能<sup class="fnref" id="zh-fnref-1"><a href="#zh-fn-1">1</a></sup>定义为准确建模现实的能力<sup class="fnref" id="zh-fnref-2"><a href="#zh-fn-2">2</a></sup>。实际上，我们关心的是那些对完成有经济价值的任务有用的现实模型。</p>
+<p>深度学习的目标，是为这些有用任务生成准确的现实模型，其方式是：</p>
+<ol>
+<li>把描述现实的真实模型视为复杂的概率分布<sup class="fnref" id="zh-fnref-3"><a href="#zh-fn-3">3</a></sup></li>
+<li>构建能够对复杂概率分布进行建模的神经网络</li>
+<li>训练这些网络，使其学会对支撑现实的那些概率分布进行建模</li>
+</ol>
+<p>在这一视角下，用深度学习创造智能仅涉及两个步骤：</p>
+<ol>
+<li>收集关于现实的有用信息（收集数据）</li>
+<li>构建一个能够有效从这些信息中学习的神经网络（对数据建模）</li>
+</ol>
+<p>提升模型智能的唯一途径，就是改进我们完成这两个步骤中每一步的质量。</p>
+<p>带着这一认识，我们来看支配这一过程的约束。先从数据约束开始。</p>
+<p><br /></p>
+<h2 id="zh-11-data">1.1. 数据</h2>
+<p><img alt="constraint-1-data" src="images/readme/constraint-1-data.png" /></p>
+<p>我们已经确立：深度学习的目标是对描述现实的概率分布进行建模。</p>
+<p>我们把针对某个特定任务、我们试图建模的那个分布称为<em>真实分布</em>。为了了解真实分布，我们从中采集许多样本，这些样本构成一个<em>数据集</em>。</p>
+<p>数据集包含关于真实分布的一部分信息，但并不包含关于真实分布的<em>全部</em>信息<sup class="fnref" id="zh-fnref-4"><a href="#zh-fn-4">4</a></sup>。正因如此，数据集代表了对真实分布的一个近似，我们称之为<em>经验分布</em>。</p>
+<p><strong>至多，我们只能期望神经网络学会对这个经验分布进行建模<sup class="fnref" id="zh-fnref-5"><a href="#zh-fn-5">5</a></sup>。</strong></p>
+<p>然而，我们最初的目标是建模真实分布。为此，我们需要经验分布是真实分布的<strong>一个良好近似</strong>。这个近似的质量，决定了在该数据集上训练出的模型最好能达到多好的上限。</p>
+<p>这就是神经网络智能的第一个约束。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #1：模型的上限只能与它所训练的数据集一样好。</strong></p>
+<p>具体而言，模型能在多大程度上近似真实分布，其上限取决于数据集中包含了多少关于真实分布的信息。</p></div>
+<h3>一个良好的近似</h3>
+<p>要让经验分布成为真实分布的更好近似，我们需要在数据集中纳入更多关于真实分布的信息。</p>
+<p>我们可以通过提高每个单独样本所含的信息来增加数据集的总信息量（直觉上，这意味着使用对相关任务更具信息量的样本）。</p>
+<p>我们也可以通过增加更多能提供关于真实分布之新信息的样本来增加数据集中的信息<sup class="fnref" id="zh-fnref-6"><a href="#zh-fn-6">6</a></sup>。</p>
+<p><strong>简化地说，提高数据集质量有两种方式：</strong></p>
+<ol>
+<li>数据质量</li>
+<li>数据数量</li>
+</ol>
+<p>这并不是因为数据越多总是越好<sup class="fnref" id="zh-fnref-7"><a href="#zh-fn-7">7</a></sup>，而是因为我们希望数据集中包含更多关于真实分布的信息，从而让模型能学到对它的充分近似。</p>
+<p>有了对数据约束以及如何提升数据集质量的这一理解，我们就可以看看这一维度上的进步是如何影响深度学习历史的。</p>
+<h3>突破 #1：大规模标注数据集</h3>
+<p>早期的机器学习依赖各研究团队各自收集的数据集。尽管人们已经提出了有效的深度学习方法，但数据集不够大，无法证明它们的优势。</p>
+<p><a href="https://en.wikipedia.org/wiki/MNIST_database" target="_blank" rel="noopener">MNIST</a> 与 <a href="https://en.wikipedia.org/wiki/ImageNet" target="_blank" rel="noopener">ImageNet</a> 等数据集的出现，极大提升了高质量、且规模大到足以有效训练深度学习模型的数据集的可得性。</p>
+<p>早期的 <a href="01-deep-neural-networks/02-cnn/03-cnn.ipynb">CNN</a>——如 <a class="paper-inline" href="01-deep-neural-networks/02-cnn/02-le-net.pdf" data-src="01-deep-neural-networks/02-cnn/02-le-net.pdf">LeNet</a> 与 <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a>——正是借助这些数据集，证明了深度神经网络能够与当时传统的机器学习方法相竞争。</p>
+<p>如今我们很容易低估这些数据集的影响，因为它们早已过时——但它们对该领域显然产生了巨大影响。值得注意的是，<a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">彻底改变了深度学习领域</a>的 AlexNet，若没有 ImageNet 数据集的创建，就根本不可能出现。</p>
+<p><strong>大规模标注数据集的出现，可以看作是把数据约束推向更大数据集的第一次突破。</strong></p>
+<p>尽管有用，这些数据集因其依赖的人工标注过程而天然难以扩展。要用更大的数据集把数据约束推向下一个层次，就需要一种全新的数据方法。</p>
+<h3>突破 #2：解锁互联网</h3>
+<p>互联网是最显而易见的、可能可用于深度学习的海量数据来源。然而，最初人们并不清楚如何用这些数据来训练深度学习模型。</p>
+<p>与标注数据集不同，互联网数据并非为某个特定任务而生，因此它看起来并不包含能为训练某个特定模型作贡献的高质量数据。正因如此，互联网数据在很长一段时间里都显得无法用于深度学习<sup class="fnref" id="zh-fnref-8"><a href="#zh-fn-8">8</a></sup>。</p>
+<p><a href="04-transformers/02-bert/03-bert.ipynb">BERT</a> 彻底改变了这一点。BERT 普及了如今所有大语言模型（包括 <a href="04-transformers/04-gpt/03-gpt.ipynb">GPT</a> 系列）都在使用的<strong>迁移学习</strong>范式——模型先在互联网的一大部分上<em>预训练</em>（数量高、质量不可控），再在更小的数据集上<em>微调</em>（数量低、质量高）。</p>
+<p><strong>BERT 有史以来第一次表明：我们真的可以让互联网规模的数据集变得有用。</strong></p>
+<p>这一结果也震动了更广泛的科技界——例如，它<a href="https://x.com/TechEmails/status/1756765277478621620" target="_blank" rel="noopener">让一位谷歌高管表示</a>，某个 AI 系统在不久的将来必将取代谷歌搜索。</p>
+<p>对此感兴趣的读者，可参阅 <a href="04-transformers/05-lora/02-lora.ipynb">LoRA</a> 论文，它进一步阐释了为什么由 BERT 发展出、并被所有现代 LLM 使用的迁移学习范式会如此有效。</p>
+<h3>突破 #3：训练助手</h3>
+<p><a href="04-transformers/02-bert/03-bert.ipynb">BERT</a> 与 <a href="04-transformers/04-gpt/03-gpt.ipynb">GPT</a> 系列在技术上令人印象深刻，但直到 ChatGPT 发布之前，都没有立即进入主流。</p>
+<p><a href="04-transformers/06-rlhf/05-rlhf.ipynb">InstructGPT</a> 正是促成这一切的突破。它使用 <a href="04-transformers/06-rlhf/">RLHF</a> 技术，以一个由人类生成、被认定为「有用助手」的优质问答对数据集，对基础的 GPT-3 模型进行微调。</p>
+<p>通过学会有效地扮演一个助手，InstructGPT 塑造出了让 ChatGPT 得以成功的那种实用的交流风格。</p>
+<p><strong>InstructGPT 的成功表明：在微调语言模型时，数据质量能带来多么高的杠杆。</strong></p>
+<p>尽管在 instruct 系列之前已经存在许多微调模型，但由于所用训练数据的高质量，InstructGPT 在当时远比几乎其他所有模型都更受青睐。</p>
+<h3>互联网数据之外</h3>
+<p>我们还能把深度学习模型所训练的数据集质量再提升多少，从而提升模型变得智能的潜力？</p>
+<p>互联网上生成的数据量正在指数级增长，这应当会持续提供越来越大的可训练数据集来源<sup class="fnref" id="zh-fnref-9"><a href="#zh-fn-9">9</a></sup>。</p>
+<p>然而，关于互联网规模数据集的数据质量还有另一个问题。我们希望系统去建模现实——而互联网可以被理解为对现实真实规律的一种（高度）有损压缩<sup class="fnref" id="zh-fnref-10"><a href="#zh-fn-10">10</a></sup>。</p>
+<p>正因如此，大量涌现的人形机器人也许会为深度学习模型提供一种全新的数据采集方式，让模型能直接获取关于现实的信息——这也使得 <a href="https://www.reuters.com/technology/robotics-startup-figure-raises-675-mln-microsoft-nvidia-other-big-techs-2024-02-29/" target="_blank" rel="noopener">OpenAI 与微软对 Figure 的投资与合作</a>显得格外有意思。</p>
+<p>无论如何，当前的缩放定律已经表明，现有模型远未触及互联网规模数据集中可用信息的容量，这意味着我们也许离数据再次成为约束的那一刻还很远。</p>
+<h3>对数据建模</h3>
+<p>既然我们已经理解了数据约束，接下来就可以探究：是什么在约束神经网络对数据建模的有效程度。</p>
+<p>这决定了模型能在多大程度上逼近对经验分布的建模，而这又对应着它的智能。</p>
+<p>决定模型学习经验分布之能力的第一个约束，是神经网络中的参数数量。</p>
+<p><br /></p>
+<h2 id="zh-12-parameters">1.2. 参数</h2>
+<p><img alt="constraint-2-parameters" src="images/readme/constraint-2-parameters.png" /></p>
+<p>模型需要具备足够的<em>表征能力</em>，才能学到数据集的经验分布。</p>
+<p>这意味着神经网络需要拥有足够的参数，以提供足够的自由度来准确建模该分布。实践中，很难预测完全建模一个数据集所需的最小参数数量。</p>
+<p>然而，当数据集中的信息量远超网络的建模能力时，改进网络最简单的办法就是扩大参数数量——这可以意味着增加网络深度，以及每层增加更多参数。</p>
+<p>面对现代互联网规模的数据集，其复杂度极为庞大，因此「增加更多参数」这一做法在提升模型智能方面的效力，丝毫没有放缓的迹象。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #2：模型的表征能力受其所含参数数量的限制。</strong></p></div>
+<p>实践中我们会看到，增加神经网络中的参数数量，其实是其他约束的函数。</p>
+<p>让我们看看过去哪些时刻这一约束尤为相关。</p>
+<h3>突破 #1：增加深度</h3>
+<p>最早的神经网络仅由单个输入层和输出层组成，这严重限制了它们的表征能力。</p>
+<p>最初的<a class="paper-inline" href="01-deep-neural-networks/01-dnn/01-dnn.pdf" data-src="01-deep-neural-networks/01-dnn/01-dnn.pdf">反向传播论文</a>讨论了增加一个隐藏层，这为网络增添了更多参数，显著提升了它表示更复杂问题的能力（如移位寄存器、异或门等——都是非常简单的例子，但在当时已令人印象深刻）。</p>
+<p><a href="01-deep-neural-networks/03-alex-net/02-alex-net.ipynb">AlexNet</a> 是「增加参数带来更好模型」最清晰的例证之一<sup class="fnref" id="zh-fnref-11"><a href="#zh-fn-11">11</a></sup>——AlexNet 架构使用了 5 个卷积层，远多于当时最大的 CNN，这使它在 ImageNet 竞赛中把此前的最佳成绩远远甩在身后。</p>
+<p>然而在早期，规模似乎只是制约模型改进的众多因素之一，而非最重要的约束。</p>
+<h3>突破 #2：缩放定律</h3>
+<p><a href="04-transformers/04-gpt/">GPT</a> 系列清楚地表明：对于互联网数据集，扩展参数似乎就足以显著提升模型质量。</p>
+<p>缩放定律毫无停歇之势，这也推动了当前不断训练越来越大模型的持续尝试。</p>
+<p align="center"><img src="images/readme/scaling-laws.png" alt="Scaling Laws" width="50%" /></p>
+<p align="center"><i>模型性能作为参数量之函数的缩放定律</i></p>
+<p><strong>重要的是，这一趋势的原因并不是「增加模型参数数量总能提升其智能」。</strong>相反，它源于一个事实：当前模型仍不具备足够的表征能力去捕捉互联网规模数据集中的全部信息。</p>
+<p>如前所述，增加神经网络的参数数量，其实受其他约束的支配。</p>
+<p><br /></p>
+<h2 id="zh-13-optimization-regularization">1.3. 优化与正则化</h2>
+<p><img alt="constraint-3-optimization-and-regularization" src="images/readme/constraint-3-optimization-and-regularization.png" /></p>
+<p>现实中，你不可能一味扩大模型参数数量还指望质量持续提升。扩大模型（通过增加深度或每层参数数量）会引入两类新问题。</p>
+<p>首先，增加网络深度会使它收敛到最优解所需的时间大大延长，最坏情况下甚至会让网络无法收敛。</p>
+<p><strong>确保模型即便在深度不断增加时也能有效收敛的过程，被称为优化。</strong></p>
+<p>此外，当你把模型参数数量扩大到其表征能力超过经验分布的复杂度时，模型可能会开始拟合分布中无关紧要的<em>噪声</em>。这种效应被称为<em>过拟合</em>。</p>
+<p><strong>正则化过程则用于确保模型学到数据集有用的<em>泛化</em>，而不至于过拟合到噪声。</strong></p>
+<p>实践中，网络的实际深度受所用优化与正则化策略之效力的约束。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #3：优化与正则化方法的效力，约束着一个网络在仍能收敛并泛化的前提下所能承载的参数数量。</strong></p></div>
+<h3>突破 #1：驯服梯度</h3>
+<p>在用<a href="01-deep-neural-networks/01-dnn/02-dnn.ipynb">反向传播</a>训练更深的神经网络时，梯度会由于连续乘以一串大权重或小权重的复合效应而被放大或消失<sup class="fnref" id="zh-fnref-12"><a href="#zh-fn-12">12</a></sup>。</p>
+<p><strong>这就是所谓的梯度消失与梯度爆炸问题。</strong></p>
+<p>人们很容易忘记这个问题当年有多么令人却步——它完全阻止了深度超过寥寥几层的网络被有效训练，对网络规模构成了重大约束。</p>
+<p>通过 <a class="paper-inline" href="02-optimization-and-regularization/03-residuals/01-residuals.pdf" data-src="02-optimization-and-regularization/03-residuals/01-residuals.pdf">ResNet</a> 架构引入的<a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">残差</a>彻底解决了这个问题：它创造出<em>残差通路</em>，让梯度得以有效地流经任意深度的网络。</p>
+<p>这一突破移除了对网络深度的一个重大约束，使得可以训练大得多的网络（也解除了此前长期存在的参数上限）。</p>
+<h3>突破 #2：网络之网络</h3>
+<p><a href="02-optimization-and-regularization/04-dropout/">Dropout</a> 引入了一种关键的正则化策略，自其诞生以来被大多数网络采用，尤其为最初普及它的 <a href="01-deep-neural-networks/03-alex-net/02-alex-net.ipynb">AlexNet</a> 的成功作出了贡献。</p>
+<p>从概念上讲，防止模型对某个特定问题过拟合的理想办法，是在同一问题上训练多个各不相同的神经网络，再取它们预测的平均。这一过程会抵消每个网络所拟合的噪声，只留下真实的表征。</p>
+<p>然而，这种朴素做法代价高得令人却步——为单个问题训练多个大型神经网络会消耗更多算力。</p>
+<p>Dropout 提供了一种在算力上有效的等价做法：在每次训练中随机屏蔽一部分神经元的作用<sup class="fnref" id="zh-fnref-13"><a href="#zh-fn-13">13</a></sup>，从而在一个神经网络内部有效地训练了指数级数量的子网络，并将它们的预测平均在一起。</p>
+<h3>突破 #3：驯服激活</h3>
+<p>训练深度网络时的另一个问题是：靠后的层在改进时，靠前各层的激活却在变化，这可能让前面各层早期的训练变得徒劳。</p>
+<p><strong>这个问题被称为内部协变量偏移</strong>，它同样阻碍了更深网络的训练。</p>
+<p><a href="02-optimization-and-regularization/05-batch-norm/">批归一化</a>与<a href="02-optimization-and-regularization/06-layer-norm/">层归一化</a>的引入解决了这一问题：它们把神经元激活强制约束到可预测的分布中，从而防止了协变量偏移问题。</p>
+<p>这一突破与残差相结合，为构建深得多的网络奠定了基础。尤其是层归一化，使得像 <a href="03-sequence-modeling/01-rnn/02-rnn.ipynb">RNN</a> 和 <a href="03-sequence-modeling/02-lstm/02-lstm.ipynb">LSTM</a> 这样更深的循环模型得以训练，进而引出了最终催生 <a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a> 的一系列创新。</p>
+<h3>突破 #4：动量</h3>
+<p>最初的优化算法——<em>随机梯度下降</em>——在每个时间步以一个预先设定的步长来更新参数。</p>
+<p>实践中，这可能非常低效并损害收敛<sup class="fnref" id="zh-fnref-14"><a href="#zh-fn-14">14</a></sup>。</p>
+<p><a href="02-optimization-and-regularization/08-adam/02-adam.ipynb">Adam</a> 优化器引入了一种高效的算法，用以追踪贯穿整个优化过程的梯度历史所构成的<strong>自适应矩</strong>。这使优化器能够根据过去的信息调整步长，往往带来快得多的收敛。</p>
+<h3>被遗忘的约束</h3>
+<p>上述进展（及相关发展）几乎在至今所有的模型中都有使用。例如，<a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a> 架构在其结构中处处使用了 <a href="02-optimization-and-regularization/04-dropout/">Dropout</a>、<a href="02-optimization-and-regularization/06-layer-norm/02-layer-norm.ipynb">层归一化</a>和<a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">残差</a>，并使用 <a href="02-optimization-and-regularization/08-adam/">Adam</a> 优化器进行训练。</p>
+<p>正因为它们在彻底消除此前的问题上如此有效，优化与正则化如今看起来已基本被解决。</p>
+<p>这一点还被另一个事实进一步放大：我们在当前互联网规模数据集上远未触及缩放定律的顶点，因此过拟合并不是需要担心的问题。</p>
+<p><strong>尽管如此，重要的是记住：优化与正则化仍然是对神经网络规模的真实约束</strong>，只是它们不再影响处于当前状态的模型。</p>
+<p><br /></p>
+<h2 id="zh-14-architecture">1.4. 架构</h2>
+<p><img alt="constraint-4-architecture" src="images/readme/constraint-4-architecture.png" /></p>
+<p>我们讲过，增加神经网络的参数数量会提升其<em>表征能力</em>。这可以理解为网络存储那些能有效建模经验分布的<em>有用表征</em>的能力。</p>
+<p>默认情况下，深度神经网络被迫为不同问题自行学习存储表征的最优方式。</p>
+<p>然而，当我们已经知道某种能让模型存储与特定问题相关的有用表征的有效方法时，把「以这种有用形式存储表征」的能力直接内建进模型，往往会有帮助。</p>
+<p><strong>把特定结构内建进神经网络设计、以便模型更容易存储有用表征，这被称为加入归纳偏置。</strong></p>
+<p>把优良的神经网络架构设计进模型，本质上是提高模型中<em>有用表征</em>的密度，也就是更高效地使用参数。</p>
+<p>就此而言，改进架构能达到与扩大参数相似的效果。</p>
+<p>实践中，架构上的进步让此前难以处理的问题（如图像合成）对神经网络成为可能。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #4：网络架构的质量约束着模型的表征能力。</strong></p></div>
+<p>从技术上讲，一个带有非线性的深度神经网络，只要参数数量足够，就能够建模任意分布<sup class="fnref" id="zh-fnref-15"><a href="#zh-fn-15">15</a></sup>。</p>
+<p>但在实践中，有些分布复杂到简单的深度神经网络无法有效建模<sup class="fnref" id="zh-fnref-16"><a href="#zh-fn-16">16</a></sup>。对于这些分布，我们转向架构上的进步来取得进展。</p>
+<h3>突破 #1：学习特征</h3>
+<p><a href="01-deep-neural-networks/02-cnn/03-cnn.ipynb">卷积神经网络</a>是第一个向神经网络引入重大归纳偏置的有效架构。CNN 背后的思想，直接受到大脑视觉系统对输入进行层级化处理的启发。</p>
+<p>CNN 使用<em>特征图</em>来跨图像检测高层特征，从而实现对图像识别任务至关重要的平移不变性。</p>
+<p>这为深度学习被证明之前常用的人工特征工程，提供了一个深度学习版的对应物。</p>
+<p>CNN 对深度学习的初期采用至关重要——像 <a class="paper-inline" href="01-deep-neural-networks/02-cnn/02-le-net.pdf" data-src="01-deep-neural-networks/02-cnn/02-le-net.pdf">LeNet</a> 和 <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> 这样的神经网络，正是用这一架构在图像分类竞赛中击败了当时的最先进水平。此外，CNN 在现代模型中依然重要——现代用于图像生成的<a href="05-image-generation/03-diffusion/05-diffusion.ipynb">扩散</a>模型中就使用了 <a href="01-deep-neural-networks/04-u-net/02-u-net.ipynb">U-Net</a> 架构。</p>
+<h3>突破 #2：记忆</h3>
+<p><a href="03-sequence-modeling/01-rnn/02-rnn.ipynb">循环神经网络</a>引入了存储关于过去的记忆以指导未来决策的能力。</p>
+<p>尽管在理论上很有意思，但在<a href="03-sequence-modeling/02-lstm/02-lstm.ipynb">长短期记忆</a>架构出现之前，它在序列建模任务上一直基本无效；LSTM 让神经网络能够学会在长时间跨度上存储、检索和<a href="03-sequence-modeling/03-learning-to-forget/02-learning-to-forget.ipynb">遗忘</a>记忆，从而学习跨时间与空间的复杂关系。</p>
+<p><strong>LSTM 的归纳偏置使它们在序列建模任务上颇为有效，开启了最终通向 Transformer 诞生的那段进步弧线。</strong></p>
+<p>尽管有效，LSTM 却受制于一个事实：它按顺序逐个处理输入序列，因而训练缓慢。</p>
+<h3>突破 #3：注意力</h3>
+<p><a href="03-sequence-modeling/06-attention/02-attention.ipynb">注意力</a>机制最初是作为 LSTM 的一个附加组件被引入的，用以增强其理解概念之间关系的能力。</p>
+<p>如今声名远扬的 <a class="paper-inline" href="04-transformers/01-transformer/01-transformer.pdf" data-src="04-transformers/01-transformer/01-transformer.pdf"><em>《Attention Is All You Need》</em></a> 论文移除了所有 LSTM 组件，证明仅凭注意力这一归纳偏置就足以胜任序列建模任务，并由此引入了<a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a> 架构，它已经永久性地改变了深度学习。</p>
+<p><strong>Transformer 之所以格外有效，不仅因为注意力机制的威力，还因为它通过移除循环结构而实现的高度并行化。</strong></p>
+<h3>突破 #4：驾驭随机性</h3>
+<p>CNN 引入了理解「图像这一复杂分布之样本」的能力。</p>
+<p>然而，合成图像这个问题看起来要难得多——CNN 可以学会滤除图像中的细节、专注于高层特征，而图像生成模型则需要学会同时创造高层特征与复杂细节。</p>
+<p>像<a href="05-image-generation/02-vae/04-vae.ipynb">变分自编码器</a>与<a href="05-image-generation/03-diffusion/05-diffusion.ipynb">扩散</a>模型这样的图像生成模型，通过把随机采样和噪声直接引入其架构，学会同时生成高层特征与复杂细节。</p>
+<p>VAE 制造出一个瓶颈，迫使模型在低维空间中学习有用的表征。然后，它们再通过随机采样在这些表征之上加回噪声。<strong>所以 VAE 先学习表征，再加入噪声。</strong></p>
+<p><strong>而扩散模型则相反：它从噪声出发，学习把信息缓慢地加进噪声中。</strong></p>
+<p>若没有这些设计，像 <a href="https://arxiv.org/abs/2112.10752" target="_blank" rel="noopener">Stable Diffusion</a> 和 <a href="05-image-generation/05-dall-e/">DALL·E</a> 这样的现代图像生成模型就不会存在。</p>
+<h3>突破 #5：嵌入</h3>
+<p><a href="03-sequence-modeling/04-word2vec/03-word2vec.ipynb">Word2Vec</a> 模型普及了文本嵌入这一概念：它迫使模型为各种概念创造出具有有趣性质的向量表示，从而保留语义与句法含义。</p>
+<p>一个常被用来说明此类嵌入之威力的例子是：以下等式在嵌入空间中成立——Embedding("King") − Embedding("Man") + Embedding("Woman") = Embedding("Queen")。</p>
+<p>嵌入向我们展示了：概念之间的关系可以用一种高度浓缩的格式来表示。</p>
+<p>后来像 <a href="05-image-generation/04-clip/02-clip.ipynb">CLIP</a> 这样基于 <a href="04-transformers/07-vision-transformer/02-vision-transformer.ipynb">Transformer</a> 架构的模型，催生了复杂的嵌入空间，把跨模态的概念理解映射到单一的表示空间，从而使 <a class="paper-inline" href="05-image-generation/05-dall-e/02-dall-e-2.pdf" data-src="05-image-generation/05-dall-e/02-dall-e-2.pdf">DALL·E 2</a> 这样的多模态模型成为可能。</p>
+<h3>「别碰架构」</h3>
+<p>在 <a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a> 问世之后的这几年里，人们的努力主要集中在扩大喂给 Transformer 的参数和数据，而不大幅调整其归纳偏置。</p>
+<p>这暗示了一种由 Transformer 之效力所驱动的架构改进停滞，也许说明了<a href="03-sequence-modeling/06-attention/">注意力</a>这一归纳偏置在智能中的某种内在有效性。</p>
+<p><strong>这种明确不再改动架构的意愿，<a href="https://www.youtube.com/watch?v=9uw3F6rndnA" target="_blank" rel="noopener">Andrej Karpathy 在这个片段中有所讨论</a>。</strong></p>
+<p>与其改动基础架构，许多最先进的模型一直在把不同的现有架构组合在一起——例如，<a href="05-image-generation/03-diffusion/05-diffusion.ipynb">扩散</a>模型的设计底层用了 <a href="01-deep-neural-networks/04-u-net/02-u-net.ipynb">U-Net</a>，而 <a class="paper-inline" href="05-image-generation/05-dall-e/02-dall-e-2.pdf" data-src="05-image-generation/05-dall-e/02-dall-e-2.pdf">DALL-E-2</a> 同时使用了 <a href="05-image-generation/04-clip/02-clip.ipynb">CLIP</a>（它由<a href="04-transformers/07-vision-transformer/02-vision-transformer.ipynb">视觉 Transformer</a> 构建）和一个<a href="05-image-generation/03-diffusion/05-diffusion.ipynb">扩散</a>模型。</p>
+<p>不同可用架构的组合，也带来了模型日益增强的多模态性，这从近期 <a href="https://openai.com/index/hello-gpt-4o/" target="_blank" rel="noopener">GPT-4o 的发布</a>中可见一斑——它在多种模态上训练单个基础模型（底层很可能组合了多种架构，尽管实现细节尚未公开）。</p>
+<p><br /></p>
+<h2 id="zh-15-compute">1.5. 算力</h2>
+<p><img alt="constraint-5-compute" src="images/readme/constraint-5-compute.png" /></p>
+<p>在假定架构高效、优化与正则化有效的前提下，对模型总参数数量与表征能力的最后一个约束，就是<strong>算力</strong>。</p>
+<p>训练过程中，每个参数的梯度都需要在每个时间步被计算并更新，这会消耗计算资源。<strong>因此，参数越多，反向传播期间的计算量就越大，这就成了限制步骤。</strong></p>
+<p>正因如此，单台设备一次只能训练有限数量的参数，超过之后，训练就必须扩展到多台设备并行进行。</p>
+<p><strong>而一旦我们可用于训练的设备数量存在上限，我们就撞上了算力约束。</strong></p>
+<p>所以，每台设备能训练一定数量的参数。然后我们需要更多设备。而如果我们能一起使用的设备数量存在上限，我们就撞上了算力约束。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #5：可用算力的总量约束着一个模型所能拥有的最大可训练参数数量。</strong></p></div>
+<p>实践中，这一约束可能源于资源不足（买不起设备）、供给不足（受限的供应链），或能源（稍后讨论）<sup class="fnref" id="zh-fnref-17"><a href="#zh-fn-17">17</a></sup>。</p>
+<h3>突破 #1：让算力互通</h3>
+<p><a href="01-deep-neural-networks/03-alex-net/02-alex-net.ipynb">AlexNet</a> 是最早利用 GPU 并行化能力来训练神经网络的重大深度学习应用之一。</p>
+<p>他们也是最早为加速训练而同时在多块 GPU 上训练深度学习模型的人。</p>
+<p><strong>他们之所以能做到这一点，是因为 NVIDIA GPU 新近增加了相互写入对方显存的能力</strong>，这使 GPU 之间可以直接进行快得多的通信，而不必通过主机来传递。</p>
+<p>这一创新（其引入源于游戏，而非深度学习）已成为训练大型模型的关键，在大型模型中，庞大 GPU 集群之间的通信已变得不可或缺。</p>
+<p>这篇论文在多个方面推动了算力约束——首先，仅仅是把 GPU 用于训练本身，其次是用多块 GPU 来分片训练，以及使用 GPU 间通信。</p>
+<h3>突破 #2：借势顺风</h3>
+<p>直到过去这十年，那些使深度学习得以走到今天的 GPU，其推进动力并非来自深度学习的激励（对 NVIDIA 这样的大公司而言，深度学习早期提供的营收机会十分稀少），而是来自游戏市场的顺风。</p>
+<p>就此而言，深度学习受益于一点运气——游戏产业创造的算力顺风，使深度学习以一种若没有游戏则很可能不会发生的方式腾飞。</p>
+<p><strong>游戏产业通过创造出足够的财务激励来生产质量不断提升的 GPU，从而抬高了深度学习模型的算力约束。</strong></p>
+<p>顺着这一连串论文，你可以看到算力质量如何随时间缓慢变好，甚至在专用 AI 算力被创造出来之前就已如此。</p>
+<h3>突破 #3：AI 获得优先</h3>
+<p>终于，在 2020 年，NVIDIA 发布了专为 AI 应用打造的 A100，因为他们判定 AI 是一场值得下注的战略赌注。这一决定如今催生了 H100，以及即将到来、将为大量 AI 训练提供算力的 B100 GPU。</p>
+<p align="center"><img src="images/readme/nvidia-openai.jpeg" alt="NVIDIA x OpenAI" width="50%" /></p>
+<p align="center"><i>黄仁勋向早期的 OpenAI 交付一台 H200</i></p>
+<h3>突破 #4：算力军备竞赛</h3>
+<p>获取算力会成为一个巨大约束，这一点最初并不显而易见。</p>
+<p>那条幂律趋势最先在 <a class="paper-inline" href="04-transformers/02-bert/01-bert.pdf" data-src="04-transformers/02-bert/01-bert.pdf">BERT</a>、<a class="paper-inline" href="04-transformers/02-bert/02-roberta.pdf" data-src="04-transformers/02-bert/02-roberta.pdf">RoBERTa</a>、<a class="paper-inline" href="04-transformers/04-gpt/01-gpt-2.pdf" data-src="04-transformers/04-gpt/01-gpt-2.pdf">GPT-2</a> 和 <a class="paper-inline" href="04-transformers/04-gpt/02-gpt-3.pdf" data-src="04-transformers/04-gpt/02-gpt-3.pdf">GPT-3</a> 中变得可见，它清楚地表明：扩大参数、进而扩大算力，是提升模型智能的必要因素。</p>
+<p>随着这一趋势愈发清晰、AI 叙事愈发有力，所有人都开始去获取所需的算力，导致需求量远超供应链此前的预测。这就造成了获取算力的约束。</p>
+<p><strong>此外，获取大量算力的原始成本，对大多数玩家而言已变得高得令人却步。</strong></p>
+<p>这些算力约束让 <a href="https://www.youtube.com/watch?v=r2UmOBrrRK8" target="_blank" rel="noopener">Sam Altman 说出了「算力将成为未来的货币」</a>。</p>
+<p><a href="https://www.pcmag.com/news/zuckerbergs-meta-is-spending-billions-to-buy-350000-nvidia-h100-gpus" target="_blank" rel="noopener">扎克伯格花了数十亿美元购入 35 万块 NVIDIA GPU</a>，考虑到当前获取算力的艰难，这如今看来是一种极具远见的举动。</p>
+<p>算力需求的攀升，也反映在 NVIDIA 算力供应链上所有关键公司（包括台积电与 ASML）飙升的市值上。</p>
+<h3>调整供应链</h3>
+<p>当前的算力约束，部分是算力供应链未能预见 AI 热潮所带来的意外需求激增的结果。</p>
+<p>随着供应链不可避免地调整以满足这些需求，约束很可能会从「谁已经获得了最多算力」转向「谁有资源购买最多算力」，考虑到 OpenAI 与资源雄厚的微软的合作，这也让 OpenAI 处于有利位置。</p>
+<h3>AI 专用芯片（ASIC）</h3>
+<p>在近期的融资周期中，许多初创公司募资打造用于推理与训练的专用 AI 芯片，承诺进一步加快训练大型模型的效率。</p>
+<p>这些专用芯片，广义上称为<strong>专用集成电路</strong>，把关于深度学习模型如何运作的假设直接内建进硬件，从而能够大幅加速训练。</p>
+<p>问题在于，其他公司能否在这一领域与之竞争，还是 NVIDIA 会保持它对 AI 训练市场的统治（最有可能）。</p>
+<p><br /></p>
+<h2 id="zh-16-compute-efficiency">1.6. 算力效率</h2>
+<p><img alt="constraint-6-compute-efficiency" src="images/readme/constraint-6-compute-efficiency.png" /></p>
+<p>算力的性能虽在提升，但有效利用这份算力却并非理所当然。高效使用算力是一个需要主动投入与优化的软件问题。</p>
+<p>像 <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttention</a> 这样的创新——它通过优化注意力访问显存的方式大幅加速了 Transformer——提醒我们：算力优化是提升训练效率、扩大模型规模的又一个杠杆。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #6：训练所用的软件实现，约束着算力利用的效率。</strong></p></div>
+<h3>突破 #1：CUDA</h3>
+<p>最初，GPU 很难上手，因为它们依赖一套全新的编程范式。</p>
+<p><a href="https://en.wikipedia.org/wiki/CUDA" target="_blank" rel="noopener">CUDA</a> 作为一种对 C 程序员而言熟悉的 GPU 编程范式被引入，使编写 GPU 代码变得平易近人得多。</p>
+<p>这门语言让 <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> 得以手写自己的核函数，以在 GPU 上加速卷积运算，为训练 CNN 解锁了新的并行化层级。</p>
+<h3>突破 #2：核函数库</h3>
+<p>如今人们已很少需要编写底层核函数了，因为像 <a href="https://pytorch.org/" target="_blank" rel="noopener">PyTorch</a> 和 <a href="https://github.com/google/jax" target="_blank" rel="noopener">JAX</a> 这样流行的库，已经为最常用的核函数写好了核代码，使现代深度学习工程师能够轻松使用 GPU，而无需深入底层代码。</p>
+<h3>持续改进</h3>
+<p>尽管 GPU 核函数如今大多已写好，但在提升模型实现的算力效率方面，很可能仍有大量机会——值得注意的是，<a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener">FlashAttention</a> 的引入就证明了这类改动在训练效率上能带来多大的差别。</p>
+<p><br /></p>
+<h2 id="zh-17-energy">1.7. 能源</h2>
+<p><img alt="constraint-7-energy" src="images/readme/constraint-7-energy.png" /></p>
+<p><strong>最后，即便算力供应链能够支撑所有需求，我们也有无限资源去购买算力，算力上仍存在一个约束：能源。</strong></p>
+<p>实践中，大型训练任务需要在大型数据中心里物理上聚集的算力上运行，因为这些设备需要彼此通信。</p>
+<p>随着大型训练任务中设备数量的增长，数据中心将需要能够支撑这些设备的能源需求。</p>
+<p>这也许真的会成为一个有意义的约束，正如<a href="https://www.youtube.com/watch?v=i-o5YbNfmh0" target="_blank" rel="noopener">扎克伯格在 Dwarkesh 播客的这个片段中讨论的那样</a>。</p>
+<p>具体来说，电网在某个地点允许被抽取的能源量是有限的，这意味着数据中心在撞上「需要能源许可、并陷入慢得多的政府监管流程」的问题之前，其规模是有上限的。</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>注记</p><p><strong>约束 #7：在单一地点能从电网抽取的能源量，约束着一次训练任务所能使用的算力。</strong></p></div>
+<p>随着许多公司计划为 AI 训练建造大型数据中心，我们将看到能源约束如何演变——值得注意的是，<a href="https://www.reuters.com/technology/microsoft-openai-planning-100-billion-data-center-project-information-reports-2024-03-29/" target="_blank" rel="noopener">有传言称微软与 OpenAI 正在启动一个 1000 亿美元的数据中心项目</a>。</p>
+<p><br /></p>
+<h2 id="zh-18-constraints-leverage">1.8. 约束与杠杆</h2>
+<p>逐一讲完每个约束之后，我们现在可以把它们全部放到深度学习进步这条更宏观的箭头中来通盘审视。</p>
+<p><strong>思考这 7 个约束的一个有用方式，是把它们分为<em>硬约束</em>与<em>杠杆</em>。</strong></p>
+<p>硬约束是<strong>数据</strong>、<strong>算力</strong>和<strong>能源</strong>——它们被缓慢的过程所限速：数据目前受限于互联网的规模化增长及其他数据采集方法，算力受限于各公司自身的资源与供应链，而能源约束最终会被监管所限速。</p>
+<p>与此同时，<strong>参数</strong>、<strong>优化与正则化</strong>、<strong>架构</strong>和<strong>算力效率</strong>可以被视为作用在硬约束之上的<strong>杠杆</strong>形式——它们都易于调整，并且在给定一组固定的数据、算力和能源下，可以被优化以最大化模型的智能。</p>
+<p><strong>对单次训练任务而言，最大化杠杆型约束很重要；但真正推动当下模型基础智能不断提升的，是改进硬约束。</strong></p>
+<p>这再次印证了缩放定律——我们的模型并没有显示出接近完全建模当前互联网规模数据集中信息的迹象，因此我们继续通过增加<em>算力</em>与<em>参数</em>来扩大模型规模。</p>
+<p><br /></p>
+<h1 id="zh-2-narratives">2. 叙事</h1>
+<p>我们可以透过约束这一透镜回望深度学习的这段进步史，看到少数几个远超其余、彻底改变了围绕深度学习之叙事的关键里程碑。</p>
+<p>由于叙事是把资本与人才配置到各类问题上的强大工具<sup class="fnref" id="zh-fnref-18"><a href="#zh-fn-18">18</a></sup>，仅这些叙事的转变本身，就对深度学习的进步产生了重大影响。</p>
+<h3>叙事 #1：深度学习行得通</h3>
+<p>深度学习史上第一次重大叙事转变，发生在 2012 年 <a class="paper-inline" href="01-deep-neural-networks/03-alex-net/01-alex-net.pdf" data-src="01-deep-neural-networks/03-alex-net/01-alex-net.pdf">AlexNet</a> 发布之后。</p>
+<p>在这篇论文之前，深度学习被认为逊于传统机器学习，因为它在图像分类等挑战中一贯败给人工特征工程方法。</p>
+<p>AlexNet 的成功把 ImageNet 挑战赛的 top-5 错误率从 25.8% 降到 16.4%，把此前的最先进水平远远甩开。</p>
+<p>这直接促成了 <a href="https://arxiv.org/abs/1409.4842" target="_blank" rel="noopener">GoogLeNet</a> 和 <a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">ResNet</a> 等进一步的创新，但更重要的是，它把注意力重新拉回深度学习，并在该领域激起了新的兴趣。</p>
+<p>这项工作带来的叙事转变，是从对深度学习之用处的怀疑，转向相信它是一种可行、乃至优于传统机器学习的方法。</p>
+<p>这一叙事转变对于把我们带到今天这一步至关重要；而且看起来，Ilya Sutskever（AlexNet 的共同作者）早在缩放定律成为共识之前很久，就意识到了它们会如何演变，正如<a href="https://www.youtube.com/watch?v=n4IQOBka8bc" target="_blank" rel="noopener">在这段与 Geoffrey Hinton 的访谈中所讨论的那样</a>。</p>
+<h3>叙事 #2：互联网规模的数据</h3>
+<p><a href="04-transformers/01-transformer/02-transformer.ipynb"><em>《Attention Is All You Need》</em></a> 论文创造出一种可大规模并行的架构，使在互联网规模数据集上训练成为可能。</p>
+<p>不过，仅仅是 Transformer 的引入，并不是造成最大叙事转变的原因。</p>
+<p>可以说，真正展示出 Transformer 如何能通过预训练与微调利用从互联网上抓取的海量数据集的，是 <a href="04-transformers/02-bert/03-bert.ipynb">BERT</a> 的引入，它开启了 AI 聚焦于实现通用智能的现代趋势。</p>
+<p>由于其迁移学习方法，BERT 在许多 NLP 任务上取得了最先进的结果，却无需在这些任务上显式训练，展现出某种<em>泛化</em>智能的最早迹象之一。</p>
+<p>BERT 造成的震动，从那句<a href="https://x.com/TechEmails/status/1756765277478621620" target="_blank" rel="noopener">谷歌高管的表态</a>中可见一斑——声称 BERT 将取代搜索产品 20 年来的全部进步。</p>
+<h3>叙事 #3：缩放定律</h3>
+<p>从 <a class="paper-inline" href="04-transformers/04-gpt/01-gpt-2.pdf" data-src="04-transformers/04-gpt/01-gpt-2.pdf">GPT-2</a> 到 <a class="paper-inline" href="04-transformers/04-gpt/02-gpt-3.pdf" data-src="04-transformers/04-gpt/02-gpt-3.pdf">GPT-3</a> 及其后的改进所定义的那条进步箭头，造就了主导当前公众情绪的缩放定律叙事。</p>
+<p>重要的是，OpenAI 很早就押注缩放定律，远在它们被广泛认可为有效之前<sup class="fnref" id="zh-fnref-19"><a href="#zh-fn-19">19</a></sup>。几年前，大多数人都认为缩放定律很幼稚。</p>
+<p>如今，由于 OpenAI 为验证这些定律所下的一系列赌注，加上 GPT-2 和 GPT-3 进一步验证了他们的假设，缩放定律回过头看已显得清晰。</p>
+<p><strong>正确外推缩放定律的走势颇具挑战</strong>——正如<a href="https://www.youtube.com/watch?v=i-o5YbNfmh0" target="_blank" rel="noopener">扎克伯格在这个片段中指出的</a>，这类趋势很少会一直延续到我们抵达目标为止——我们通常会撞上瓶颈，然后不得不重新调整策略。</p>
+<p>在这个语境下，问题在于互联网数据集的经验分布能把我们带多远。换个说法——互联网的经验分布，离那个作为「现实之模型」的真实分布有多近？</p>
+<p>这将决定：通过扩大参数以在互联网上训练，我们的模型还能变得多好、直到触及一个承载上限。</p>
+<p><strong>这一叙事也很好地说明了叙事在融资中有多大的影响力。</strong></p>
+<p>AGI 叙事也许是史上最强大的叙事，因为它可以宣称「其他一切有经济价值的事，都将被这个问题的解决所解决」。</p>
+<p>显然，这一点在<a href="https://www.wsj.com/tech/ai/sam-altman-seeks-trillions-of-dollars-to-reshape-business-of-chips-and-ai-89ab3db0" target="_blank" rel="noopener">传闻中 OpenAI 那次 7 万亿美元的融资尝试</a>中被有效地运用了（那当然只是传闻，但正因人们相信它有可能，才恰恰体现了 AGI 叙事的力量）。</p>
+<h1 id="zh-3-inspiration">3. 灵感来源</h1>
+<p>那些引领深度学习突破的想法从何而来？</p>
+<p>当我们回望这段进步史，可以看到几个反复出现的常见灵感来源。</p>
+<h3>神经科学</h3>
+<p>深度学习中许多进展最显而易见的直接灵感来源，是神经科学。</p>
+<p><a class="paper-inline" href="01-deep-neural-networks/02-cnn/01-cnn.pdf" data-src="01-deep-neural-networks/02-cnn/01-cnn.pdf">CNN</a> 几乎是直接受大脑视觉系统启发，并带来了深度学习的重大进展。</p>
+<p>类似地，<a href="02-optimization-and-regularization/02-relu/">ReLU</a> 的有效性可用大脑中概念的稀疏表征所带来的能量效率来解释。</p>
+<p>其他一些系统，如 <a href="03-sequence-modeling/02-lstm/02-lstm.ipynb">LSTM</a> 和<a href="03-sequence-modeling/06-attention/02-attention.ipynb">注意力</a>机制，表面上看似取材于神经科学概念（记忆与注意力），但实际上，它们的实现更多是受神经网络的数学以及针对具体问题的工程所驱动，而非直接以大脑为蓝本。</p>
+<p>例如，LSTM 的设计完美地工程化解决了 RNN 中的梯度消失与爆炸问题，而恰好一个基于长期记忆的系统是修复这一问题的有效方式。</p>
+<p>这一模式暗示：与其说深度学习直接从神经科学取得灵感，不如说<strong>深度学习也许部分是通过第一性原理，收敛到了与自然在大脑中构建智能相似的方法。</strong></p>
+<p>这是一个不错的事后合理化，但可能过度构造了一个并不真正反映实际情况的干净叙事。</p>
+<p>此外，早期论文似乎有意地感到一种压力，要把想法硬套进神经科学与生物学的论证中，哪怕原本可能并不存在这种联系。</p>
+<p><a href="02-optimization-and-regularization/04-dropout/02-dropout.ipynb">Dropout</a> 在我看来是这方面最露骨的例子——他们解释说 dropout 的「一种可能动机」来自动物的性行为，尽管他们在论文中此前的解释表明，dropout 其实是从一条围绕正则化的、相当合乎逻辑的思路推导而来的。</p>
+<p>这看起来像是在架构被设计出来之后，才试图让它显得与生物学相对应，而非它真正充当了灵感来源（当然，我也可能想错了）。</p>
+<h3>线性代数与微积分</h3>
+<p>最值得注意的是，<a href="01-deep-neural-networks/01-dnn/02-dnn.ipynb">反向传播</a>和 <a href="04-transformers/05-lora">LoRA</a> 直接受神经网络背后的数学启发。</p>
+<p>LoRA（低秩自适应）直接是对模型训练方式的一种操作，它利用了线性代数的一个特性（把权重矩阵分解为可训练参数更少的更低维矩阵）。</p>
+<p>类似地，像<a href="02-optimization-and-regularization/03-residuals/02-residuals.ipynb">残差</a>这样的进展，直接受神经网络内部梯度流性质的启发。</p>
+<h3>物理学与信息论</h3>
+<p>值得注意的是，<a href="05-image-generation/02-vae/04-vae.ipynb">VAE</a> 和<a href="05-image-generation/03-diffusion/05-diffusion.ipynb">扩散</a>模型从热力学——特别是 Langevin 动力学——以及概率论与信息论中汲取灵感。</p>
+<p>这些系统涉及带噪采样，因此它们转而借鉴现实世界中类似的带噪系统所用的方法来获取灵感。</p>
+<h3>工程</h3>
+<p>实践中，深度学习的大多数创新其实更多是受神经网络设计中的工程问题所驱动，与它们表面上的灵感领域只有表层相似。</p>
+<h1 id="zh-4-intelligence">4. 智能</h1>
+<p>深度学习的这段进步历程，能告诉我们关于自身智能的什么？</p>
+<p>在这里我会尽量保持纯粹的经验性，因为鉴于这一话题的主观性质，很容易滑入没有根据的哲学思辨。</p>
+<p>正如我们所讨论的，看待智能的一种方式（受<a href="https://www.nature.com/articles/nrn2787" target="_blank" rel="noopener">自由能原理</a>启发）是：把它视为我们建模描述现实的复杂分布、再在这些模型上运行主动推断以在世界中完成事情的能力的一种度量<sup class="fnref" id="zh-fnref-20"><a href="#zh-fn-20">20</a></sup>。</p>
+<p>看起来，关于现实的数据（数据集 vs. 我们的感官）、算力（晶体管 vs. 神经元）和能源（电力 vs. 食物），再加上规模（参数 vs. 连接），当然还有一个有效的学习算法，共同产生了看起来智能的系统。</p>
+<p>此外，不同架构所提供的各种归纳偏置的有效性，也许揭示了它们试图建模的信息之结构中某种内在的东西。</p>
+<p>例如，注意力机制的有效性引出了一个问题：为什么仅这一归纳偏置就显得如此擅长建模数据。</p>
+<p>如果智能真的只是数据、算力、能源和训练的函数，那么如今看来，数字智能不久将超越我们，似乎已是必然。</p>
+<h1 id="zh-5-future">5. 未来</h1>
+<p>我们现在已把这段进步史重新框定为：一系列不断抬高支配数字智能之约束上限的进展。</p>
+<p>过去一切对进步作出贡献的事物，都是由上文讨论的这些约束所决定的。</p>
+<p>重要的是，这一点在未来不会有任何改变——<strong>同样这 7 个约束将永远决定我们将去向何方，以及我们离 AGI 有多近。<sup class="fnref" id="zh-fnref-21"><a href="#zh-fn-21">21</a></sup></strong></p>
+<p>到此为止，我们已经解决了 AGI 的<em>理论问题</em>，也就是说，我们确切地知道什么能把我们带到 AGI<sup class="fnref" id="zh-fnref-22"><a href="#zh-fn-22">22</a></sup>。</p>
+<p>直到过去这十年，这一点才变得显而易见——在这十年里，我们见识到了深度学习能走多远的威力。</p>
+<p>现在的问题是，我们能否解决 AGI 的<em>工程问题</em>。我们能否持续推动所有约束，从而不断提升数字智能？</p>
+<p>尽管缩放定律当前正在发挥作用、当前的前进道路是获取更大规模的算力来训练更大的模型，但这一方法的效力在未来会触及一个极限（很难知道是何时）。</p>
+<p>我们有可能会撞上一个瓶颈：模型能变得多好，受限于互联网经验分布的质量；那样的话，我们就将不得不寻求其他数据来源。</p>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>重点</p><p>至关重要的是记住：深度学习进步的核心原则，是推动这 7 个约束将带来越来越智能的系统。</p>
+<p>尽管缩放定律表明当前的限制性约束是算力与参数，但随着时间推移，这些约束可能会转移到数据与能源上，而那将带来新的挑战。</p></div>
+<p><br /></p>
+<h1 id="zh-resources">资源</h1>
+<h2 id="zh-topics">主题</h2>
+<div class="markdown-alert markdown-alert-important"><p class="markdown-alert-title"><svg class="octicon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>重点</p><p>本仓库中重点讲解的每个主题，都收录在下方链接的文件夹中。</p>
+<p>在每个文件夹里，你会找到与该主题相关的核心论文副本（<code>.pdf</code> 文件），以及我自己对直觉、数学的梳理，以及在相关之处的实现（都在 <code>.ipynb</code> 文件中）。</p></div>
+<p><strong>1. 深度神经网络</strong></p>
+<ul>
+<li><a href="01-deep-neural-networks/01-dnn/">1.1. DNN</a></li>
+<li><a href="01-deep-neural-networks/02-cnn/">1.2. CNN</a></li>
+<li><a href="01-deep-neural-networks/03-alex-net/">1.3. AlexNet</a></li>
+<li><a href="01-deep-neural-networks/04-u-net/">1.4. U-Net</a></li>
+</ul>
+<p><strong>2. 优化与正则化</strong></p>
+<ul>
+<li><a href="02-optimization-and-regularization/01-weight-decay/">2.1. 权重衰减</a></li>
+<li><a href="02-optimization-and-regularization/02-relu/">2.2. ReLU</a></li>
+<li><a href="02-optimization-and-regularization/03-residuals/">2.3. 残差</a></li>
+<li><a href="02-optimization-and-regularization/04-dropout/">2.4. Dropout</a></li>
+<li><a href="02-optimization-and-regularization/05-batch-norm/">2.5. 批归一化</a></li>
+<li><a href="02-optimization-and-regularization/06-layer-norm/">2.6. 层归一化</a></li>
+<li><a href="02-optimization-and-regularization/07-gelu/">2.7. GELU</a></li>
+<li><a href="02-optimization-and-regularization/08-adam/">2.8. Adam</a></li>
+</ul>
+<p><strong>3. 序列建模</strong></p>
+<ul>
+<li><a href="03-sequence-modeling/01-rnn/">3.1. RNN</a></li>
+<li><a href="03-sequence-modeling/02-lstm/">3.2. LSTM</a></li>
+<li><a href="03-sequence-modeling/03-learning-to-forget/">3.3. 学会遗忘</a></li>
+<li><a href="03-sequence-modeling/04-word2vec/">3.4. Word2Vec 与 Phrase2Vec</a></li>
+<li><a href="03-sequence-modeling/05-seq2seq/">3.5. Seq2Seq</a></li>
+<li><a href="03-sequence-modeling/06-attention/">3.6. 注意力</a></li>
+<li><a href="03-sequence-modeling/07-mixture-of-experts/">3.7. 专家混合</a></li>
+</ul>
+<p><strong>4. Transformer</strong></p>
+<ul>
+<li><a href="04-transformers/01-transformer/">4.1. Transformer</a></li>
+<li><a href="04-transformers/02-bert/">4.2. BERT</a></li>
+<li><a href="04-transformers/03-t5">4.3. T5</a></li>
+<li><a href="04-transformers/04-gpt">4.4. GPT-2 与 GPT-3</a></li>
+<li><a href="04-transformers/05-lora">4.5. LoRA</a></li>
+<li><a href="04-transformers/06-rlhf">4.8. RLHF 与 InstructGPT</a></li>
+<li><a href="04-transformers/07-vision-transformer">4.9. 视觉 Transformer</a></li>
+</ul>
+<p><strong>5. 图像生成</strong></p>
+<ul>
+<li><a href="05-image-generation/01-gan/">5.1. GAN</a></li>
+<li><a href="05-image-generation/02-vae/">5.2. VAE</a></li>
+<li><a href="05-image-generation/03-diffusion/">5.3. 扩散</a></li>
+<li><a href="05-image-generation/04-clip/">5.4. CLIP</a></li>
+<li><a href="05-image-generation/05-dall-e/">5.5. DALL·E 与 DALL·E 2</a></li>
+</ul>
+<p><br /></p>
+<h2 id="zh-implementations">实现</h2>
+<p>我为本仓库中许多核心主题提供了极简实现，放在每个主题的 <code>.ipynb</code> 文件中。</p>
+<p>一般来说，你可以在网上找到大多数论文的优秀实现，这意味着挑战并不在于弄清如何重新实现。我把它们收录进来，是为了方便地集中到一处，也为了突出那些能演示每个概念的简单实现。</p>
+<ul>
+<li><a href="01-deep-neural-networks/01-dnn/02-dnn.ipynb">DNN</a></li>
+<li><a href="01-deep-neural-networks/02-cnn/03-cnn.ipynb">CNN</a></li>
+<li><a href="04-transformers/01-transformer/02-transformer.ipynb">Transformer</a></li>
+<li><a href="04-transformers/05-lora/02-lora.ipynb">LoRA</a></li>
+<li><a href="04-transformers/07-vision-transformer/02-vision-transformer.ipynb">视觉 Transformer</a></li>
+<li><a href="05-image-generation/01-gan/02-gan.ipynb">GAN</a></li>
+<li><a href="05-image-generation/02-vae/04-vae.ipynb">VAE</a></li>
+<li><a href="05-image-generation/03-diffusion/05-diffusion.ipynb">扩散</a></li>
+</ul>
+<p><br /></p>
+<h2 id="zh-papers-list">论文</h2>
+<p><strong>深度神经网络</strong></p>
+<ul>
+<li><strong>DNN</strong> - Learning Internal Representations by Error Propagation (1987), D. E. Rumelhart et al. <a href="https://stanford.edu/~jlmcc/papers/PDP/Volume%201/Chap8_PDP86.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>CNN</strong> - Backpropagation Applied to Handwritten Zip Code Recognition (1989), Y. Lecun et al. <a href="http://yann.lecun.com/exdb/publis/pdf/lecun-89e.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LeNet</strong> - Gradient-Based Learning Applied to Document Recognition (1998), Y. Lecun et al. <a href="http://vision.stanford.edu/cs598_spring07/papers/Lecun98.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>AlexNet</strong> - ImageNet Classification with Deep Convolutional Networks (2012), A. Krizhevsky et al. <a href="https://papers.nips.cc/paper_files/paper/2012/file/c399862d3b9d6b76c8436e924a68c45b-Paper.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>U-Net</strong> - U-Net: Convolutional Networks for Biomedical Image Segmentation (2015), O. Ronneberger et al. <a href="https://arxiv.org/abs/1505.04597" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>优化与正则化</strong></p>
+<ul>
+<li><strong>Weight Decay</strong> - A Simple Weight Decay Can Improve Generalization (1991), A. Krogh and J. Hertz <a href="https://proceedings.neurips.cc/paper/1991/file/8eefcfdf5990e441f0fb6f3fad709e21-Paper.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>ReLU</strong> - Deep Sparse Rectified Neural Networks (2011), X. Glorot et al. <a href="https://www.researchgate.net/publication/215616967_Deep_Sparse_Rectifier_Neural_Networks" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Residuals</strong> - Deep Residual Learning for Image Recognition (2015), K. He et al. <a href="https://arxiv.org/pdf/1512.03385" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Dropout</strong> - Dropout: A Simple Way to Prevent Neural Networks from Overfitting (2014), N. Strivastava et al. <a href="https://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>BatchNorm</strong> - Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift (2015), S. Ioffe and C. Szegedy <a href="https://arxiv.org/pdf/1502.03167" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LayerNorm</strong> - Layer Normalization (2016), J. Lei Ba et al. <a href="https://arxiv.org/pdf/1607.06450" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>GELU</strong> - Gaussian Error Linear Units (GELUs) (2016), D. Hendrycks and K. Gimpel <a href="https://arxiv.org/pdf/1606.08415" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Adam</strong> - Adam: A Method for Stochastic Optimization (2014), D. P. Kingma and J. Ba <a href="https://arxiv.org/pdf/1412.6980" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>序列建模</strong></p>
+<ul>
+<li><strong>RNN</strong> - A Learning Algorithm for Continually Running Fully Recurrent Neural Networks (1989), R. J. Williams <a href="https://gwern.net/doc/ai/nn/rnn/1989-williams-2.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LSTM</strong> - Long-Short Term Memory (1997), S. Hochreiter and J. Schmidhuber <a href="https://www.bioinf.jku.at/publications/older/2604.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Learning to Forget</strong> - Learning to Forget: Continual Prediction with LSTM (2000), F. A. Gers et al. <a href="https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=e10f98b86797ebf6c8caea6f54cacbc5a50e8b34" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Word2Vec</strong> - Efficient Estimation of Word Representations in Vector Space (2013), T. Mikolov et al. <a href="https://arxiv.org/pdf/1301.3781" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Phrase2Vec</strong> - Distributed Representations of Words and Phrases and their Compositionality (2013), T. Mikolov et al. <a href="https://arxiv.org/pdf/1310.4546" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Encoder-Decoder</strong> - Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation (2014), K. Cho et al. <a href="https://arxiv.org/pdf/1406.1078" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Seq2Seq</strong> - Sequence to Sequence Learning with Neural Networks (2014), I. Sutskever et al. <a href="https://arxiv.org/pdf/1409.3215" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Attention</strong> - Neural Machine Translation by Jointly Learning to Align and Translate (2014), D. Bahdanau et al. <a href="https://arxiv.org/pdf/1409.0473" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Mixture of Experts</strong> - Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer (2017), N. Shazeer et al. <a href="https://arxiv.org/pdf/1701.06538" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>Transformer</strong></p>
+<ul>
+<li><strong>Transformer</strong> - Attention Is All You Need (2017), A. Vaswani et al. <a href="https://arxiv.org/pdf/1706.03762" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>BERT</strong> - BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding (2018), J. Devlin et al. <a href="https://arxiv.org/pdf/1810.04805" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>RoBERTa</strong> - RoBERTa: A Robustly Optimized BERT Pretraining Approach (2019), Y. Liu et al. <a href="https://arxiv.org/pdf/1907.11692" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>T5</strong> - Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer (2019), C. Raffel et al. <a href="https://arxiv.org/pdf/1910.10683" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>GPT-2</strong> - Language Models are Unsupervised Multitask Learners (2018), A. Radford et al. <a href="https://d4mucfpksywv.cloudfront.net/better-language-models/language_models_are_unsupervised_multitask_learners.pdf" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>GPT-3</strong> - Language Models are Few-Shot Learners (2020) T. B. Brown et al. <a href="https://arxiv.org/pdf/2005.14165" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>LoRA -</strong> LoRA: Low-Rank Adaptation of Large Language Models (2021), E. J. Hu et al. <a href="https://arxiv.org/pdf/2106.09685" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>RLHF</strong> - Fine-Tuning Language Models From Human Preferences (2019), D. Ziegler et al. <a href="https://arxiv.org/pdf/1909.08593" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>PPO</strong> - Proximal Policy Optimization Algorithms (2017), J. Schulman et al. <a href="https://arxiv.org/pdf/1707.06347" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>InstructGPT</strong> - Training language models to follow instructions with human feedback (2022), L. Ouyang et al. <a href="https://arxiv.org/pdf/2203.02155" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Helpful &amp; Harmless</strong> - Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback (2022), Y. Bai et al. <a href="https://arxiv.org/pdf/2204.05862" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Vision Transformer</strong> - An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (2020), A. Dosovitskiy et al. <a href="https://arxiv.org/pdf/2010.11929" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<p><strong>生成模型</strong></p>
+<ul>
+<li><strong>GAN</strong> - Generative Adversarial Networks (2014), I. J. Goodfellow et al. <a href="https://arxiv.org/pdf/1406.2661" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>VAE</strong> - Auto-Encoding Variational Bayes (2013), D. Kingma and M. Welling <a href="https://arxiv.org/pdf/1312.6114" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>VQ VAE</strong> - Neural Discrete Representation Learning (2017), A. Oord et al. <a href="https://arxiv.org/pdf/1711.00937" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>VQ VAE 2</strong> - Generating Diverse High-Fidelity Images with VQ-VAE-2 (2019), A. Razavi et al. <a href="https://arxiv.org/pdf/1906.00446" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Diffusion</strong> - Deep Unsupervised Learning using Nonequilibrium Thermodynamics (2015), J. Sohl-Dickstein et al. <a href="https://arxiv.org/pdf/1503.03585" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Denoising Diffusion</strong> - Denoising Diffusion Probabilistic Models (2020), J. Ho. et al. <a href="https://arxiv.org/pdf/2006.11239" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Denoising Diffusion 2</strong> - Improved Denoising Diffusion Probabilistic Models (2021), A. Nichol and P. Dhariwal <a href="https://arxiv.org/pdf/2102.09672" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>Diffusion Beats GANs</strong> - Diffusion Models Beat GANs on Image Synthesis, P. Dhariwal and A. Nichol <a href="https://arxiv.org/pdf/2105.05233" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>CLIP</strong> - Learning Transferable Visual Models From Natural Language Supervision (2021), A. Radford et al. <a href="https://arxiv.org/pdf/2103.00020" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>DALL E</strong> - Zero-Shot Text-to-Image Generation (2021), A. Ramesh et al. <a href="https://arxiv.org/pdf/2102.12092" target="_blank" rel="noopener">[PDF]</a></li>
+<li><strong>DALL E 2</strong> - Hierarchical Text-Conditional Image Generation with CLIP Latents (2022), A. Ramesh et al. <a href="https://arxiv.org/pdf/2204.06125" target="_blank" rel="noopener">[PDF]</a></li>
+</ul>
+<section class="footnotes"><ol>
+<li id="zh-fn-1"><p>每个人对智能都有不同的定义，它们在不同语境下各有用处，且没有哪一个能捕捉这个词的全貌。人们可能不认同这一定义的具体细节。我选择它是为了简洁，以便从经济视角清晰地界定我们试图用深度学习实现什么——在此我不太关心它的哲学意涵。 <a href="#zh-fnref-1" class="fn-back">↩</a></p></li>
+<li id="zh-fn-2"><p>Karl Friston 的<a href="https://www.nature.com/articles/nrn2787" target="_blank" rel="noopener">自由能原理</a>表明，这一智能定义在大脑的语境下同样成立（当心，这篇论文用了不必要的数学复杂性来讲解，但它所描述的核心概念很简单）。值得注意的是，智能系统构建关于世界的模型，然后用这些模型进行<em>主动推断</em>以改造其环境。 <a href="#zh-fnref-2" class="fn-back">↩</a></p></li>
+<li id="zh-fn-3"><p>这个想法乍看也许不直观。但它其实说的是非常简单的事：(1) 现实有一套支配所发生之事的规则 (2) 我们可以通过为「在已发生之事的前提下，接下来可能发生什么」赋予概率来建模这些规则 (3) 因此，这些模型就是概率分布。同样，<a href="https://www.nature.com/articles/nrn2787" target="_blank" rel="noopener">自由能原理</a>支持这种建模现实的观点。 <a href="#zh-fnref-3" class="fn-back">↩</a></p></li>
+<li id="zh-fn-4"><p>这里假定我们试图建模的真实分布足够复杂，以致把关于它的全部信息纳入数据集是不可行的。在深度学习中这几乎总是成立。 <a href="#zh-fnref-4" class="fn-back">↩</a></p></li>
+<li id="zh-fn-5"><p>这里假定模型完美地表示了数据集中存在的全部信息，而这种情况很少发生。 <a href="#zh-fnref-5" class="fn-back">↩</a></p></li>
+<li id="zh-fn-6"><p>这类似于：为泰勒级数添加更多项会得到更接近原函数的函数。近似会随着关于真实函数的信息增多而改善。 <a href="#zh-fnref-6" class="fn-back">↩</a></p></li>
+<li id="zh-fn-7"><p>事实上，你可以想到一些「更多数据毫无差别」的例子。比如把同一张图像（或两张彼此相似的图像）加入数据集，并不会提升所创建模型的质量。这是因为这些新数据点并未增添多少关于真实分布的新信息。 <a href="#zh-fnref-7" class="fn-back">↩</a></p></li>
+<li id="zh-fn-8"><p>在很长一段时间里，都没有足够强的算力或足够好的架构来有效处理互联网数据集的规模。 <a href="#zh-fnref-8" class="fn-back">↩</a></p></li>
+<li id="zh-fn-9"><p>这实际上也许不足以让模型质量持续提升，因为近期一项<a href="https://arxiv.org/abs/2404.04125" target="_blank" rel="noopener">关于零样本学习的分析</a>表明，大语言模型执行任务的能力，随数据集中相关数据量的增加而呈对数增长。 <a href="#zh-fnref-9" class="fn-back">↩</a></p></li>
+<li id="zh-fn-10"><p>互联网是对人类全部知识的一种有损压缩，带有大量噪声（不同帖子背后复杂而相互冲突的意图）。此外，人类知识本身也是对现实规律的一种非常有损（且部分不准确）的压缩。 <a href="#zh-fnref-10" class="fn-back">↩</a></p></li>
+<li id="zh-fn-11"><p>不过，AlexNet 是大量创新组合在一起才如此有效的结果——网络深度的增加，辅以有效的优化与正则化方法，以及用 GPU 进行训练，正是后者使这种规模的增加成为可能。 <a href="#zh-fnref-11" class="fn-back">↩</a></p></li>
+<li id="zh-fn-12"><p>理解本节需要对反向传播算法的基础有基本了解。<a href="https://www.youtube.com/playlist?list=PLZHQObOWTQDNU6R1_67000Dx_ZCJB-3pi" target="_blank" rel="noopener">3blue1brown 的神经网络系列</a>对任何想学习的人来说，都是一个直观而有趣的入门。 <a href="#zh-fnref-12" class="fn-back">↩</a></p></li>
+<li id="zh-fn-13"><p>这一效应迫使单个神经元学习「在与各种其他神经元协作时才有用」的通用表征，而不是与相邻神经元相互协同适应——后者会让大群神经元去拟合噪声。 <a href="#zh-fnref-13" class="fn-back">↩</a></p></li>
+<li id="zh-fn-14"><p>具体来说，在梯度方差很大的参数空间中，某个步长可能在地形的某些部分造成过度调整，而在另一些情形下导致慢得令人痛苦的变化。 <a href="#zh-fnref-14" class="fn-back">↩</a></p></li>
+<li id="zh-fn-15"><p>这个想法在最初的<a class="paper-inline" href="01-deep-neural-networks/01-dnn/01-dnn.pdf" data-src="01-deep-neural-networks/01-dnn/01-dnn.pdf">反向传播论文</a>中有所探讨。 <a href="#zh-fnref-15" class="fn-back">↩</a></p></li>
+<li id="zh-fn-16"><p>例如图像分类，其中单个像素值充满噪声，并会受到各种变换的影响。 <a href="#zh-fnref-16" class="fn-back">↩</a></p></li>
+<li id="zh-fn-17"><p>在越来越大的设备（如需要彼此通信的 GPU）集群上训练，还存在许多工程挑战。 <a href="#zh-fnref-17" class="fn-back">↩</a></p></li>
+<li id="zh-fn-18"><p>感兴趣的读者可参阅 <a href="https://kwokchain.com/2021/09/29/narrative-distillation-1/" target="_blank" rel="noopener">Kevin Kwok 关于叙事蒸馏（Narrative Distillation）的文章</a>，它对叙事在资本与资源配置中的力量作了出色的探讨。 <a href="#zh-fnref-18" class="fn-back">↩</a></p></li>
+<li id="zh-fn-19"><p>用 Thiel 的话说，你可以把这框定为 OpenAI 的「秘密」，或某种他们相信、而别人不相信的东西。 <a href="#zh-fnref-19" class="fn-back">↩</a></p></li>
+<li id="zh-fn-20"><p>这种对智能的看法，也很好地映照了 WaitButWhy 那篇 <a href="https://waitbutwhy.com/2015/11/the-cook-and-the-chef-musks-secret-sauce.html" target="_blank" rel="noopener">《The Cook and the Chef: Musk's Secret Sauce》</a> 中的思维框架。 <a href="#zh-fnref-20" class="fn-back">↩</a></p></li>
+<li id="zh-fn-21"><p>这并不是说缩放定律会把我们带到 AGI，而是说不断推动这些约束会把我们带到 AGI。我们可能会撞上某些瓶颈，使缩放定律在某个时刻变得过时。 <a href="#zh-fnref-21" class="fn-back">↩</a></p></li>
+<li id="zh-fn-22"><p>这里假定你相信当前系统展现出了智能行为，而有些人对此仍持不同意见。 <a href="#zh-fnref-22" class="fn-back">↩</a></p></li>
+</ol></section>
+</article>
+</div>
+<script>
+(function () {
+  function setMsg(text) {
+    var m = document.getElementById('viewer-msg');
+    if (!m) return;
+    if (text) { m.innerHTML = text; m.style.display = 'block'; }
+    else { m.style.display = 'none'; }
+  }
+  function labelOf(a) {
+    var lang = document.documentElement.getAttribute('data-lang') || 'en';
+    var s = a.querySelector('.lang-' + lang);
+    return (s ? s.textContent : a.textContent).trim();
+  }
+  function openPdf(src, title) {
+    var viewer = document.getElementById('viewer');
+    var frame = document.getElementById('pdf-frame');
+    document.getElementById('viewer-title').textContent = title || 'PDF';
+    document.getElementById('viewer-open').href = src;
+    viewer.hidden = false;
+    viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setMsg(null);
+    frame.src = src; // local, repo-relative PDF renders directly in the iframe
+  }
+
+  // Menu items and in-body citation links both open the inline viewer.
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a.paper, a.paper-inline');
+    if (a && a.dataset.src) {
+      e.preventDefault();
+      openPdf(a.dataset.src, labelOf(a));
+    }
+  });
+
+  function close() {
+    var viewer = document.getElementById('viewer');
+    if (viewer) viewer.hidden = true;
+    var frame = document.getElementById('pdf-frame');
+    if (frame) frame.removeAttribute('src');
+    setMsg(null);
+  }
+  var btn = document.getElementById('viewer-close');
+  if (btn) btn.addEventListener('click', close);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var v = document.getElementById('viewer');
+      if (v && !v.hidden) close();
+    }
+  });
+})();
+
+(function(){var K='deeplearning-lang';
+function apply(l){document.documentElement.setAttribute('data-lang',l);try{localStorage.setItem(K,l)}catch(e){}
+var t=document.getElementById('lang-toggle');if(t)[].forEach.call(t.querySelectorAll('button'),function(b){b.classList.toggle('active',b.dataset.set===l)});}
+var s;try{s=localStorage.getItem(K)}catch(e){}
+apply(s==='zh'?'zh':(s==='en'?'en':(document.documentElement.getAttribute('data-lang')||'en')));
+document.addEventListener('click',function(e){var b=e.target.closest('#lang-toggle button');if(b)apply(b.dataset.set);});})();
+</script>
+</body>
+</html>
